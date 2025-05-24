@@ -1,11 +1,12 @@
 /*
-See the LICENSE.txt file for this sample’s licensing information.
+See the LICENSE.txt file for this sample's licensing information.
 
 Abstract:
 A protocol that represents the model for the camera view.
 */
 
 import SwiftUI
+import AVFoundation
 
 /// A protocol that represents the model for the camera view.
 ///
@@ -37,6 +38,9 @@ protocol Camera: AnyObject {
 
     /// Switches between video devices available on the host system.
     func switchVideoDevices() async
+    
+    /// Selects a specific camera position (front or back).
+    func selectCamera(position: AVCaptureDevice.Position) async
     
     /// A Boolean value that indicates whether the camera is currently switching video devices.
     var isSwitchingVideoDevices: Bool { get }

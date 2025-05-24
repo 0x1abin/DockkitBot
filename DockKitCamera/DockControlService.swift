@@ -11,7 +11,9 @@ import Combine
 #if canImport(DockKit)
 import DockKit
 #endif
+#if canImport(UIKit)
 import UIKit
+#endif
 import Spatial
 
 /// An object that manages DockKit accessories and their control.

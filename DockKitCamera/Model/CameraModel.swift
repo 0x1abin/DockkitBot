@@ -1,5 +1,5 @@
 /*
-See the LICENSE.txt file for this sample’s licensing information.
+See the LICENSE.txt file for this sample's licensing information.
 
 Abstract:
 An object that provides the interface to the features of the camera.
@@ -7,6 +7,7 @@ An object that provides the interface to the features of the camera.
 
 import SwiftUI
 import Combine
+import AVFoundation
 
 /// An object that provides the interface to the features of the camera.
 ///
@@ -79,6 +80,13 @@ final class CameraModel: Camera {
         isSwitchingVideoDevices = true
         defer { isSwitchingVideoDevices = false }
         await captureService.selectNextVideoDevice()
+    }
+    
+    /// Selects a specific camera position (front or back).
+    func selectCamera(position: AVCaptureDevice.Position) async {
+        isSwitchingVideoDevices = true
+        defer { isSwitchingVideoDevices = false }
+        await captureService.selectCamera(position: position)
     }
     
     // MARK: - Video capture

@@ -1,5 +1,5 @@
 /*
-See the LICENSE.txt file for this sample’s licensing information.
+See the LICENSE.txt file for this sample's licensing information.
 
 Abstract:
 A camera implementation to use when working with SwiftUI previews.
@@ -7,6 +7,7 @@ A camera implementation to use when working with SwiftUI previews.
 
 import Foundation
 import SwiftUI
+import AVFoundation
 
 @Observable
 class PreviewCameraModel: Camera {
@@ -41,6 +42,10 @@ class PreviewCameraModel: Camera {
     
     func switchVideoDevices() {
         logger.debug("Device switching isn't implemented in PreviewCamera.")
+    }
+    
+    func selectCamera(position: AVCaptureDevice.Position) async {
+        logger.debug("Camera selection isn't implemented in PreviewCamera.")
     }
     
     func toggleRecording() {

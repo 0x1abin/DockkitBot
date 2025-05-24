@@ -19,6 +19,8 @@ class PreviewDockControllerModel: DockController {
     
     var dockAccessoryFeatures: DockAccessoryFeatures = DockAccessoryFeatures()
     
+    var robotFaceState: RobotFaceState = RobotFaceState()
+    
     var trackedPersons: [DockAccessoryTrackedPerson] = []
     
     init() {

@@ -36,7 +36,6 @@
 		5550ACBB2C1E6C8D002651AC /* DockControllerModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5550ACBA2C1E6C8D002651AC /* DockControllerModel.swift */; };
 		5550ACBD2C1E7256002651AC /* PreviewCameraModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5550ACBC2C1E7256002651AC /* PreviewCameraModel.swift */; };
 		5550ACBF2C1E7261002651AC /* PreviewDockAccessoryControllerModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5550ACBE2C1E7261002651AC /* PreviewDockAccessoryControllerModel.swift */; };
-		29104EFF09B346CBB52FD9B0 /* RobotFaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B2232BEA044D0CB0C67755 /* RobotFaceView.swift */; };
 		55A595A32C07D1DD001D3AA4 /* DockKit_CameraApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55A595A22C07D1DD001D3AA4 /* DockKit_CameraApp.swift */; };
 		55A595A52C07D1DD001D3AA4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55A595A42C07D1DD001D3AA4 /* ContentView.swift */; };
 		55A595A72C07D1E0001D3AA4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 55A595A62C07D1E0001D3AA4 /* Assets.xcassets */; };
@@ -83,7 +82,6 @@
 		55A595A62C07D1E0001D3AA4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		55A595A92C07D1E0001D3AA4 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		707DB2D302FA0F0BB3C41F04 /* LICENSE.txt */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
-		49B2232BEA044D0CB0C67755 /* RobotFaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RobotFaceView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -141,7 +139,6 @@
 				55308A8C2C3C8DB200814AB2 /* PreviewContainer.swift */,
 				55308A8D2C3C8DB200814AB2 /* SwitchCameraButton.swift */,
 				55308A8E2C3C8DB200814AB2 /* TrackingSummaryView.swift */,
-				49B2232BEA044D0CB0C67755 /* RobotFaceView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -334,7 +331,6 @@
 				55308AA02C3C8DB200814AB2 /* BatteryView.swift in Sources */,
 				55A595A32C07D1DD001D3AA4 /* DockKit_CameraApp.swift in Sources */,
 				5550AC8E2C1CD362002651AC /* DataTypes.swift in Sources */,
-				29104EFF09B346CBB52FD9B0 /* RobotFaceView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

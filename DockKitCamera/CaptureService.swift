@@ -8,7 +8,9 @@ An object that manages a capture session and its inputs and outputs.
 import Foundation
 import AVFoundation
 import Combine
+#if canImport(UIKit)
 import UIKit
+#endif
 
 /// An actor that manages the capture pipeline, which includes the capture session, device inputs, and capture outputs.
 /// The app defines it as an `actor` type to ensure that all camera operations happen off the `@MainActor`.
@@ -189,6 +191,25 @@ actor CaptureService {
         // The app only calls this method in response to someone requesting to switch cameras.
         // Set the new selection as the person's preferred camera.
         AVCaptureDevice.userPreferredCamera = nextDevice
+    }
+    
+    /// Selects a specific camera position (front or back).
+    func selectCamera(position: AVCaptureDevice.Position) {
+        let videoDevices = deviceLookup.cameras
+        
+        // Find a device with the specified position
+        if let targetDevice = videoDevices.first(where: { $0.position == position }) {
+            // Only change if we're not already using this device
+            if targetDevice != currentDevice {
+                changeCaptureDevice(to: targetDevice)
+                
+                // Set the zoom factor.
+                zoomFactor = targetDevice.videoZoomFactor
+                minZoomFactor = targetDevice.minAvailableVideoZoomFactor
+                
+                AVCaptureDevice.userPreferredCamera = targetDevice
+            }
+        }
     }
     
     // Changes the device the service uses for video capture.

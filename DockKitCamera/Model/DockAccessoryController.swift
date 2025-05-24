@@ -29,6 +29,9 @@ protocol DockController: AnyObject {
      /// The dock accessory features that a person can enable in the user interface.
     var dockAccessoryFeatures: DockAccessoryFeatures { get }
     
+    /// The robot face state for robot face mode.
+    var robotFaceState: RobotFaceState { get }
+    
     /// Starts the DockKit pipeline.
     func start() async
     

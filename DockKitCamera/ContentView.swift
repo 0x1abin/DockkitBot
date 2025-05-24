@@ -70,9 +70,13 @@ struct ContentView<CameraModel: Camera, DockControllerModel: DockController>: Vi
     
     var body: some View {
         ZStack {
-            // A container view that manages the placement of the preview.
-            PreviewContainer(camera: camera) {
-                CameraPreview(source: camera.previewSource)
+            // Show robot face when in robot face mode, otherwise show camera preview
+            if dockController.dockAccessoryFeatures.trackingMode == .robotFace {
+                RobotFaceView(robotFaceState: dockController.robotFaceState)
+            } else {
+                // A container view that manages the placement of the preview.
+                PreviewContainer(camera: camera) {
+                    CameraPreview(source: camera.previewSource)
                     .onTapGesture { location in
                         // Select the subject at the device's location if tap-to-track is enabled.
                         Task {
@@ -150,9 +154,13 @@ struct ContentView<CameraModel: Camera, DockControllerModel: DockController>: Vi
                         }
                         .hidden(dockController.dockAccessoryFeatures.trackingMode != .manual || camera.isSwitchingVideoDevices)
                     }
+                }
             }
-            // The main camera user interface.
-            CameraUI(camera: camera, dockController: dockController)
+            
+            // The main camera user interface (only show when not in robot face mode).
+            if dockController.dockAccessoryFeatures.trackingMode != .robotFace {
+                CameraUI(camera: camera, dockController: dockController)
+            }
         }
     }
     

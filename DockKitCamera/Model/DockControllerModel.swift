@@ -38,6 +38,9 @@ final class DockControllerModel: DockController {
     /// The `dockAccessory` features that a person can enable in the user interface.
     private(set) var dockAccessoryFeatures = DockAccessoryFeatures()
     
+    /// The robot face state for robot face mode.
+    private(set) var robotFaceState = RobotFaceState()
+    
     /// An object that manages the app's DockKit functionality.
     private let dockControlService = DockControlService()
     
@@ -60,7 +63,19 @@ final class DockControllerModel: DockController {
     }
     
     func updateTrackingMode(to trackingMode: TrackingMode) async -> Bool {
-         await dockControlService.updateTrackingMode(to: trackingMode)
+        // Update the robot face state when entering or leaving robot face mode
+        if trackingMode == .robotFace {
+            robotFaceState.isTracking = true
+            // Switch to front camera for robot face mode
+            if let cameraDelegate = await dockControlService.cameraCaptureDelegate as? CameraModel {
+                await cameraDelegate.selectCamera(position: .front)
+            }
+            return true
+        } else {
+            robotFaceState.isTracking = false
+        }
+        
+        return await dockControlService.updateTrackingMode(to: trackingMode)
     }
     
     func selectSubject(at point: CGPoint?, override: Bool = false) async -> Bool {
@@ -141,6 +156,7 @@ final class DockControllerModel: DockController {
         Task {
             for await trackedPersonsUpdate in await dockControlService.$trackedPersons.values {
                 for person in trackedPersonsUpdate {
+#if canImport(UIKit)
                     let orientation = UIDevice.current.orientation
                     if orientation == .landscapeLeft || orientation == .landscapeRight {
                         person.rect = CGRect(x: person.rect.origin.x,
@@ -148,10 +164,58 @@ final class DockControllerModel: DockController {
                                              width: person.rect.height,
                                              height: person.rect.width)
                     }
+#endif
                 }
                 
                 trackedPersons = trackedPersonsUpdate
+                
+                // Update robot face eye positions when in robot face mode
+                if dockAccessoryFeatures.trackingMode == .robotFace {
+                    updateRobotEyePositions(with: trackedPersonsUpdate)
+                }
             }
+        }
+    }
+    
+    // MARK: - Robot Face Mode
+    /// Update robot eye positions based on tracked persons.
+    private func updateRobotEyePositions(with trackedPersons: [DockAccessoryTrackedPerson]) {
+        if let primaryPerson = trackedPersons.first {
+            robotFaceState.isTracking = true
+            
+            // Calculate eye positions based on face center
+            let faceCenter = CGPoint(
+                x: primaryPerson.rect.midX,
+                y: primaryPerson.rect.midY
+            )
+            
+            // Convert face position to eye movement (inverted for natural look)
+            let eyeX = 1.0 - faceCenter.x // Invert X for mirror effect
+            let eyeY = faceCenter.y
+            
+            // Apply some smoothing and constraints
+            let constrainedX = max(0.2, min(0.8, eyeX))
+            let constrainedY = max(0.3, min(0.7, eyeY))
+            
+            robotFaceState.leftEyePosition = CGPoint(x: constrainedX, y: constrainedY)
+            robotFaceState.rightEyePosition = CGPoint(x: constrainedX, y: constrainedY)
+            
+            // Update mood based on tracking confidence
+            if let looking = primaryPerson.looking {
+                if looking > 0.8 {
+                    robotFaceState.mood = .happy
+                } else if looking > 0.5 {
+                    robotFaceState.mood = .normal
+                } else {
+                    robotFaceState.mood = .sad
+                }
+            }
+        } else {
+            robotFaceState.isTracking = false
+            robotFaceState.mood = .sleepy
+            // Return eyes to center when no face is detected
+            robotFaceState.leftEyePosition = CGPoint(x: 0.5, y: 0.5)
+            robotFaceState.rightEyePosition = CGPoint(x: 0.5, y: 0.5)
         }
     }
     
@@ -165,6 +229,12 @@ final class DockControllerModel: DockController {
 extension DockControllerModel: DockAccessoryTrackingDelegate {
     func track(metadata: [AVMetadataObject], sampleBuffer: CMSampleBuffer?,
                deviceType: AVCaptureDevice.DeviceType, devicePosition: AVCaptureDevice.Position) {
+        // Handle robot face mode - directly process face detection for eye tracking
+        if dockAccessoryFeatures.trackingMode == .robotFace {
+            processFaceDetectionForRobotMode(metadata: metadata)
+            return
+        }
+        
         guard dockAccessoryFeatures.trackingMode == .custom else {
             return
         }
@@ -177,6 +247,28 @@ extension DockControllerModel: DockAccessoryTrackingDelegate {
             await dockControlService.track(metadata: metadata, sampleBuffer: sampleBuffer,
                                            deviceType: deviceType, devicePosition: devicePosition)
         }
+    }
+    
+    /// Process face detection metadata for robot face mode.
+    private func processFaceDetectionForRobotMode(metadata: [AVMetadataObject]) {
+        // Create mock tracked persons from face detection for robot eye tracking
+        var mockTrackedPersons: [DockAccessoryTrackedPerson] = []
+        
+        for object in metadata {
+            if let faceObject = object as? AVMetadataFaceObject {
+                // Convert face bounds to our tracking format
+                let person = DockAccessoryTrackedPerson(
+                    saliency: 1,
+                    rect: faceObject.bounds,
+                    speaking: nil,
+                    looking: 0.8 // Assume person is looking at camera
+                )
+                mockTrackedPersons.append(person)
+            }
+        }
+        
+        // Update robot eye positions with detected faces
+        updateRobotEyePositions(with: mockTrackedPersons)
     }
 }
 

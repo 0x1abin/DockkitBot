@@ -251,6 +251,7 @@ enum TrackingMode: String, CaseIterable, Identifiable {
     case system = "System Tracking"
     case custom = "Custom Tracking"
     case manual = "Manual Control"
+    case robotFace = "Robot Face Mode"
     public var id: Self { self }
 }
 
@@ -267,5 +268,28 @@ enum ChevronType: String, CaseIterable, Identifiable {
     case tiltDown
     case panLeft
     case panRight
+    public var id: Self { self }
+}
+
+// MARK: - Robot Face supporting types
+
+@Observable
+/// An object that stores the robot face state and eye positions.
+class RobotFaceState {
+    var leftEyePosition: CGPoint = CGPoint(x: 0.5, y: 0.5)
+    var rightEyePosition: CGPoint = CGPoint(x: 0.5, y: 0.5)
+    var isBlinking: Bool = false
+    var mood: RobotMood = .normal
+    var isTracking: Bool = false
+    
+    init() {}
+}
+
+enum RobotMood: String, CaseIterable, Identifiable {
+    case normal = "normal"
+    case happy = "happy"
+    case sad = "sad"
+    case excited = "excited"
+    case sleepy = "sleepy"
     public var id: Self { self }
 }
