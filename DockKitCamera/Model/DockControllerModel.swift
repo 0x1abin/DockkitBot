@@ -241,10 +241,11 @@ final class DockControllerModel: DockController {
         } else {
             robotFaceState.isTracking = false
             
-            // 仅在非手动模式下才自动设置为困倦表情
-            if !robotFaceState.isManualMoodMode {
-                robotFaceState.mood = .sleepy
-            }
+            // 不再在跟踪丢失时自动设置为困倦表情，保持当前表情
+            // 注释掉原来的逻辑:
+            // if !robotFaceState.isManualMoodMode {
+            //     robotFaceState.mood = .sleepy
+            // }
             
             // Return eyes to center when no face is detected
             withAnimation(.easeOut(duration: 0.3)) {

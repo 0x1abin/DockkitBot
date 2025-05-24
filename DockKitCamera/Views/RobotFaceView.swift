@@ -182,6 +182,17 @@ struct RobotFaceView: View {
             moodAnimator.startLEDAnimations()
             moodAnimator.startMoodAnimations()
             startLEDBlinking()
+            
+            // 设置电机动作完成后的回调
+            motorExecutor.onActionCompleted = {
+                // 在手动模式下，表情动作执行结束后恢复到正常表情
+                if robotFaceState.isManualMoodMode {
+                    print("🔄 电机动作完成，恢复到正常表情")
+                    withAnimation(.easeInOut(duration: 0.5)) {
+                        robotFaceState.mood = .normal
+                    }
+                }
+            }
         }
         .onDisappear {
             // 清理定时器
@@ -371,27 +382,24 @@ struct RobotFaceView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .background(
-            Capsule()
-                .fill(
-                    isRandomMoodMode ? 
-                    Color.orange.opacity(0.2) : 
-                    Color.black.opacity(0.5)
-                )
-                .overlay(
-                    Capsule()
-                        .stroke(
-                            isRandomMoodMode ? 
-                            Color.orange.opacity(0.5) : 
-                            Color.white.opacity(0.1), 
-                            lineWidth: 1
-                        )
-                )
-        )
+        .background(backgroundForRandomMode)
         .scaleEffect(showLongPressHint ? 1.0 : 0.8)
         .opacity(1.0)
         .animation(.spring(response: 0.4, dampingFraction: 0.6), value: isRandomMoodMode)
         .animation(.easeInOut(duration: 0.3), value: showLongPressHint)
+    }
+    
+    @ViewBuilder
+    private var backgroundForRandomMode: some View {
+        Capsule()
+            .fill(isRandomMoodMode ? Color.orange.opacity(0.2) : Color.black.opacity(0.5))
+            .overlay(
+                Capsule()
+                    .stroke(
+                        isRandomMoodMode ? Color.orange.opacity(0.5) : Color.white.opacity(0.1), 
+                        lineWidth: 1
+                    )
+            )
     }
     
     // MARK: - LED Blinking

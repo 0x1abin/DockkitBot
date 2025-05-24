@@ -97,6 +97,9 @@ class FastMotorActionExecutor {
     private(set) var isPerformingMotorAction: Bool = false
     private var previousTrackingMode: TrackingMode = .system
     
+    // 动作完成后的回调闭包
+    var onActionCompleted: (() -> Void)?
+    
     /// 根据表情返回对应的快速电机动作
     func getMotorActionForMood(_ mood: RobotMood) -> FastMotorAction? {
         switch mood {
@@ -191,6 +194,9 @@ class FastMotorActionExecutor {
         
         isPerformingMotorAction = false
         print("🏁 快速电机动作完成")
+        
+        // 调用回调闭包
+        onActionCompleted?()
     }
     
     /// 执行具体的快速电机动作
