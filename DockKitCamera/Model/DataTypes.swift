@@ -1,5 +1,5 @@
 /*
-See the LICENSE.txt file for this sample’s licensing information.
+See the LICENSE.txt file for this sample's licensing information.
 
 Abstract:
 Abstract:
@@ -286,10 +286,32 @@ class RobotFaceState {
 }
 
 enum RobotMood: String, CaseIterable, Identifiable {
+    // 基础情绪
     case normal = "normal"
     case happy = "happy"
     case sad = "sad"
     case excited = "excited"
     case sleepy = "sleepy"
+    
+    // 八大基础情绪 (Plutchik's Wheel)
+    case anger = "anger"         // 愤怒
+    case disgust = "disgust"     // 嫌恶
+    case fear = "fear"           // 恐惧
+    case surprise = "surprise"   // 惊喜
+    case trust = "trust"         // 信任
+    case anticipation = "anticipation" // 期待
+    case joy = "joy"             // 欢愉
+    case sadness = "sadness"     // 悲伤
+    
+    // 复合情绪
+    case curiosity = "curiosity" // 好奇
+    case acceptance = "acceptance" // 接纳
+    case contempt = "contempt"   // 蔑视
+    case pride = "pride"         // 骄傲
+    case shame = "shame"         // 羞耻
+    case love = "love"           // 爱
+    case guilt = "guilt"         // 内疚
+    case envy = "envy"           // 嫉妒
+    
     public var id: Self { self }
 }
