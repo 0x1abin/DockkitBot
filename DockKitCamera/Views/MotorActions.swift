@@ -2,7 +2,7 @@
 See the LICENSE.txt file for this sample's licensing information.
 
 Abstract:
-Motor action types and execution logic for DockKit accessories.
+Fast and responsive motor action system for DockKit accessories.
 */
 
 import Foundation
@@ -13,8 +13,9 @@ import DockKit
 import Spatial
 #endif
 
-// Import required types
-// 导入必要的类型定义
+// MARK: - Required Type Imports
+// 这些类型定义在 DataTypes.swift 中，确保可以访问
+// ChevronType, RobotMood, TrackingMode, DockController 等类型
 
 // MARK: - Required Types Import
 
@@ -59,149 +60,98 @@ extension TimeInterval {
 }
 #endif
 
-// MARK: - Motor Action Types
+// MARK: - Fast Motor Action Types
 
-/// 电机动作类型
-enum MotorAction {
-    case orientationSequence([OrientationStep])  // 方向序列动作
-    case velocitySequence([VelocityStep])        // 角速度序列动作
+/// 快速电机动作类型
+enum FastMotorAction {
+    case quickNod                    // 快速点头
+    case doubleNod                   // 双次点头
+    case shake                       // 摇头
+    case lookup                      // 抬头
+    case tiltLeft                    // 左倾
+    case tiltRight                   // 右倾
+    case bounce                      // 弹跳
+    case tremor                      // 颤抖
+    case scan                        // 扫视
+    case returnToCenter              // 回中心
 }
 
-/// 方向步骤
-enum OrientationStep {
-    case nod(angle: Double, duration: Double)     // 点头/抬头 (pitch角度，度数)
-    case shake(angle: Double, duration: Double)   // 摇头 (yaw角度，度数)
-    case roll(angle: Double, duration: Double)    // 翻滚 (roll角度，度数)
-    case center(duration: Double)                 // 回到中心位置
-    case pause(duration: Double)                  // 暂停保持当前位置
+/// 快速动作步骤
+struct FastMotionStep {
+    let direction: ChevronType
+    let speed: Double
+    let duration: Double
+    
+    init(_ direction: ChevronType, speed: Double = 1.0, duration: Double = 0.3) {
+        self.direction = direction
+        self.speed = max(0.5, min(3.0, speed))  // 限制速度范围
+        self.duration = max(0.1, min(1.0, duration))  // 限制时长范围
+    }
 }
 
-/// 角速度步骤
-enum VelocityStep {
-    case angularVelocity(pitch: Double = 0, yaw: Double = 0, roll: Double = 0, duration: Double)
-    case tremble(intensity: Double, duration: Double)  // 颤抖效果
-    case stop(duration: Double)                        // 停止运动
-    case center(duration: Double)                      // 回到中心
-}
+// MARK: - Fast Motor Action Executor
 
-// MARK: - Motor Action Executor
-
-/// 电机动作执行器
+/// 快速电机动作执行器
 @Observable
-class MotorActionExecutor {
+class FastMotorActionExecutor {
     private(set) var isPerformingMotorAction: Bool = false
     private var previousTrackingMode: TrackingMode = .system
     
-    /// 根据表情返回对应的电机动作
-    func getMotorActionForMood(_ mood: RobotMood) -> MotorAction? {
+    /// 根据表情返回对应的快速电机动作
+    func getMotorActionForMood(_ mood: RobotMood) -> FastMotorAction? {
         switch mood {
         case .happy, .joy:
-            return .orientationSequence([
-                .nod(angle: -15, duration: 0.4),  // 点头向下
-                .nod(angle: 5, duration: 0.3),   // 回弹
-                .nod(angle: -10, duration: 0.3), // 再次点头
-                .center(duration: 0.4)           // 回到中心
-            ])
+            return .quickNod
+            
         case .excited:
-            return .orientationSequence([
-                .nod(angle: -20, duration: 0.2),  // 快速点头
-                .nod(angle: 10, duration: 0.2),   // 快速抬头
-                .nod(angle: -15, duration: 0.2),  // 再次点头
-                .center(duration: 0.3)
-            ])
+            return .bounce
+            
         case .sad, .sadness:
-            return .orientationSequence([
-                .shake(angle: -25, duration: 0.5), // 摇头向左
-                .shake(angle: 25, duration: 0.6),  // 摇头向右
-                .shake(angle: -15, duration: 0.4), // 轻微左摇
-                .center(duration: 0.5)
-            ])
-        case .guilt:
-            return .orientationSequence([
-                .nod(angle: 20, duration: 0.8),   // 慢慢低头
-                .pause(duration: 1.0),            // 保持低头
-                .center(duration: 0.6)            // 缓慢抬头
-            ])
+            return .shake
+            
+        case .guilt, .shame:
+            return .lookup  // 低头后抬头
+            
         case .surprise:
-            return .orientationSequence([
-                .nod(angle: -30, duration: 0.15), // 快速抬头
-                .pause(duration: 0.3),            // 保持惊讶姿态
-                .center(duration: 0.4)
-            ])
+            return .lookup
+            
         case .anger:
-            return .velocitySequence([
-                .angularVelocity(yaw: -1.5, duration: 0.2), // 快速左摇
-                .angularVelocity(yaw: 1.8, duration: 0.2),  // 快速右摇
-                .angularVelocity(yaw: -1.2, duration: 0.15), // 左摇
-                .angularVelocity(yaw: 1.0, duration: 0.15),  // 右摇
-                .stop(duration: 0.1)
-            ])
+            return .tremor
+            
         case .fear:
-            return .velocitySequence([
-                .tremble(intensity: 0.8, duration: 1.2), // 多轴颤抖
-                .center(duration: 0.4)
-            ])
+            return .tremor
+            
         case .curiosity:
-            return .orientationSequence([
-                .shake(angle: -20, duration: 0.6),  // 缓慢向左看
-                .pause(duration: 0.4),              // 观察
-                .shake(angle: 40, duration: 0.8),   // 向右看
-                .pause(duration: 0.4),              // 观察
-                .center(duration: 0.5)              // 回到中心
-            ])
+            return .scan
+            
         case .pride:
-            return .orientationSequence([
-                .nod(angle: -25, duration: 0.6),   // 抬头
-                .pause(duration: 1.5),             // 保持骄傲姿态
-                .center(duration: 0.5)
-            ])
-        case .shame:
-            return .orientationSequence([
-                .nod(angle: 25, duration: 0.7),    // 低头
-                .pause(duration: 1.2),             // 保持羞耻姿态
-                .center(duration: 0.6)
-            ])
+            return .lookup
+            
         case .normal:
-            return .orientationSequence([
-                .center(duration: 0.5)             // 平滑回到中心
-            ])
+            return .returnToCenter
+            
         case .disgust:
-            return .orientationSequence([
-                .shake(angle: -15, duration: 0.3), // 轻微后退摇头
-                .nod(angle: 10, duration: 0.3),    // 略微抬头表示不屑
-                .center(duration: 0.4)
-            ])
+            return .tiltLeft
+            
         case .trust, .acceptance:
-            return .orientationSequence([
-                .nod(angle: -8, duration: 0.8),    // 轻微点头表示认同
-                .center(duration: 0.4)
-            ])
+            return .doubleNod
+            
         case .contempt:
-            return .orientationSequence([
-                .nod(angle: -15, duration: 0.4),   // 抬头表示蔑视
-                .shake(angle: 15, duration: 0.4),  // 轻微偏头
-                .center(duration: 0.5)
-            ])
+            return .tiltRight
+            
         case .love:
-            return .orientationSequence([
-                .nod(angle: -10, duration: 0.5),   // 轻柔点头
-                .shake(angle: -8, duration: 0.4),  // 轻微偏头
-                .nod(angle: -5, duration: 0.4),    // 再次轻点
-                .center(duration: 0.5)
-            ])
+            return .quickNod
+            
         case .envy:
-            return .orientationSequence([
-                .shake(angle: -20, duration: 0.5), // 侧视
-                .nod(angle: 8, duration: 0.4),     // 轻微低头
-                .center(duration: 0.4)
-            ])
+            return .scan
+            
         default:
-            return nil
+            return .quickNod
         }
     }
     
-    /// 执行电机动作
-    func executeMotorAction(_ action: MotorAction, for mood: RobotMood, dockController: (any DockController)?) async {
+    /// 执行快速电机动作
+    func executeMotorAction(_ action: FastMotorAction, for mood: RobotMood, dockController: (any DockController)?) async {
         guard dockController != nil else {
             print("⚠️ DockController未设置，无法执行电机动作")
             return
@@ -209,9 +159,8 @@ class MotorActionExecutor {
         
         isPerformingMotorAction = true
         
-        // 暂停跟随效果 - 保存当前跟踪模式
+        // 暂停跟随效果
         previousTrackingMode = await dockController?.dockAccessoryFeatures.trackingMode ?? .system
-        
         print("🔄 暂停跟随效果，当前模式: \(previousTrackingMode)")
         let success = await dockController?.updateTrackingMode(to: .manual) ?? false
         
@@ -222,15 +171,15 @@ class MotorActionExecutor {
         }
         
         // 等待模式切换完成
-        try? await Task.sleep(nanoseconds: NSEC_PER_SEC / 10) // 0.1秒
+        try? await Task.sleep(nanoseconds: NSEC_PER_SEC / 20) // 0.05秒，更短的等待
         
-        // 执行具体的电机动作
-        let actionSuccess = await performSpecificMotorAction(action, dockController: dockController)
+        // 执行具体的快速动作
+        let actionSuccess = await performFastMotorAction(action, dockController: dockController)
         
         if actionSuccess {
-            print("✅ 电机动作执行成功: \(action) for \(mood)")
+            print("✅ 快速电机动作执行成功: \(action) for \(mood)")
         } else {
-            print("❌ 电机动作执行失败: \(action) for \(mood)")
+            print("❌ 快速电机动作执行失败: \(action) for \(mood)")
         }
         
         // 恢复跟随效果
@@ -241,181 +190,185 @@ class MotorActionExecutor {
         }
         
         isPerformingMotorAction = false
-        print("🏁 电机动作完成")
+        print("🏁 快速电机动作完成")
     }
     
-    /// 执行具体的电机动作
-    private func performSpecificMotorAction(_ action: MotorAction, dockController: (any DockController)?) async -> Bool {
-        guard dockController != nil else { return false }
-        
+    /// 执行具体的快速电机动作
+    private func performFastMotorAction(_ action: FastMotorAction, dockController: (any DockController)?) async -> Bool {
         switch action {
-        case .orientationSequence(let steps):
-            return await executeOrientationSequence(steps, dockController: dockController)
+        case .quickNod:
+            return await executeQuickNod(dockController: dockController)
             
-        case .velocitySequence(let steps):
-            return await executeVelocitySequence(steps, dockController: dockController)
+        case .doubleNod:
+            return await executeDoubleNod(dockController: dockController)
+            
+        case .shake:
+            return await executeShake(dockController: dockController)
+            
+        case .lookup:
+            return await executeLookup(dockController: dockController)
+            
+        case .tiltLeft:
+            return await executeTilt(.panLeft, dockController: dockController)
+            
+        case .tiltRight:
+            return await executeTilt(.panRight, dockController: dockController)
+            
+        case .bounce:
+            return await executeBounce(dockController: dockController)
+            
+        case .tremor:
+            return await executeTremor(dockController: dockController)
+            
+        case .scan:
+            return await executeScan(dockController: dockController)
+            
+        case .returnToCenter:
+            return await executeReturn(dockController: dockController)
         }
     }
     
-    /// 执行方向序列动作
-    private func executeOrientationSequence(_ steps: [OrientationStep], dockController: (any DockController)?) async -> Bool {
-        print("🎯 开始执行方向序列动作，共 \(steps.count) 步")
-        
+    // MARK: - Fast Action Implementations
+    
+    /// 快速点头 - 平衡动作，自动回到原位
+    private func executeQuickNod(dockController: (any DockController)?) async -> Bool {
+        let steps = [
+            FastMotionStep(.tiltDown, speed: 2.0, duration: 0.2),  // 向下
+            FastMotionStep(.tiltUp, speed: 1.8, duration: 0.15),   // 回弹
+            FastMotionStep(.tiltDown, speed: 1.5, duration: 0.15), // 再次向下
+            FastMotionStep(.tiltUp, speed: 1.5, duration: 0.15)    // 回到原位
+        ]
+        return await executeSteps(steps, dockController: dockController, needsReturnToCenter: false)
+    }
+    
+    /// 双次点头 - 平衡动作
+    private func executeDoubleNod(dockController: (any DockController)?) async -> Bool {
+        let steps = [
+            FastMotionStep(.tiltDown, speed: 2.0, duration: 0.15), // 第一次点头
+            FastMotionStep(.tiltUp, speed: 2.0, duration: 0.1),    // 快速回弹
+            FastMotionStep(.tiltDown, speed: 2.2, duration: 0.15), // 第二次点头
+            FastMotionStep(.tiltUp, speed: 1.8, duration: 0.1)     // 回到原位
+        ]
+        return await executeSteps(steps, dockController: dockController, needsReturnToCenter: false)
+    }
+    
+    /// 摇头 - 平衡动作
+    private func executeShake(dockController: (any DockController)?) async -> Bool {
+        let steps = [
+            FastMotionStep(.panLeft, speed: 1.8, duration: 0.2),   // 向左
+            FastMotionStep(.panRight, speed: 2.0, duration: 0.3),  // 向右（更大幅度）
+            FastMotionStep(.panLeft, speed: 1.5, duration: 0.2),   // 再向左
+            FastMotionStep(.panRight, speed: 1.2, duration: 0.15)  // 回到中心偏右
+        ]
+        return await executeSteps(steps, dockController: dockController, needsReturnToCenter: false)
+    }
+    
+    /// 抬头看 - 平衡动作
+    private func executeLookup(dockController: (any DockController)?) async -> Bool {
+        let steps = [
+            FastMotionStep(.tiltUp, speed: 2.5, duration: 0.3),    // 抬头
+            FastMotionStep(.tiltDown, speed: 1.2, duration: 0.2)   // 回到原位
+        ]
+        return await executeSteps(steps, dockController: dockController, needsReturnToCenter: false)
+    }
+    
+    /// 倾斜 - 平衡动作
+    private func executeTilt(_ direction: ChevronType, dockController: (any DockController)?) async -> Bool {
+        let oppositeDirection: ChevronType = (direction == .panLeft) ? .panRight : .panLeft
+        let steps = [
+            FastMotionStep(direction, speed: 1.5, duration: 0.4),         // 倾斜
+            FastMotionStep(oppositeDirection, speed: 1.2, duration: 0.3)  // 回到原位
+        ]
+        return await executeSteps(steps, dockController: dockController, needsReturnToCenter: false)
+    }
+    
+    /// 弹跳 - 平衡动作
+    private func executeBounce(dockController: (any DockController)?) async -> Bool {
+        let steps = [
+            FastMotionStep(.tiltUp, speed: 2.5, duration: 0.1),    // 快速上弹
+            FastMotionStep(.tiltDown, speed: 2.8, duration: 0.12), // 下压
+            FastMotionStep(.tiltUp, speed: 2.2, duration: 0.1),    // 再次上弹
+            FastMotionStep(.tiltDown, speed: 1.8, duration: 0.1),  // 轻微下压
+            FastMotionStep(.tiltUp, speed: 1.2, duration: 0.08)    // 回到原位
+        ]
+        return await executeSteps(steps, dockController: dockController, needsReturnToCenter: false)
+    }
+    
+    /// 颤抖 - 平衡动作，通过对称设计回到原位
+    private func executeTremor(dockController: (any DockController)?) async -> Bool {
+        // 设计对称的颤抖序列，确保最终回到原位
+        let steps = [
+            FastMotionStep(.panLeft, speed: 1.5, duration: 0.08),
+            FastMotionStep(.panRight, speed: 1.6, duration: 0.08),
+            FastMotionStep(.tiltUp, speed: 1.4, duration: 0.08),
+            FastMotionStep(.tiltDown, speed: 1.7, duration: 0.08),
+            FastMotionStep(.panRight, speed: 1.3, duration: 0.08),
+            FastMotionStep(.panLeft, speed: 1.5, duration: 0.08),
+            FastMotionStep(.tiltDown, speed: 1.2, duration: 0.08),
+            FastMotionStep(.tiltUp, speed: 1.1, duration: 0.08)
+        ]
+        return await executeSteps(steps, dockController: dockController, needsReturnToCenter: false)
+    }
+    
+    /// 扫视 - 平衡动作
+    private func executeScan(dockController: (any DockController)?) async -> Bool {
+        let steps = [
+            FastMotionStep(.panLeft, speed: 2.0, duration: 0.3),   // 向左扫视
+            FastMotionStep(.panRight, speed: 2.5, duration: 0.4),  // 向右扫视
+            FastMotionStep(.panLeft, speed: 1.5, duration: 0.2),   // 返回中心
+            FastMotionStep(.panRight, speed: 0.8, duration: 0.1)   // 精确回位
+        ]
+        return await executeSteps(steps, dockController: dockController, needsReturnToCenter: false)
+    }
+    
+    /// 回到中心 - 轻微的归中动作
+    private func executeReturn(dockController: (any DockController)?) async -> Bool {
+        let steps = [
+            FastMotionStep(.tiltUp, speed: 0.8, duration: 0.15),
+            FastMotionStep(.tiltDown, speed: 0.6, duration: 0.1),
+            FastMotionStep(.panLeft, speed: 0.7, duration: 0.1),
+            FastMotionStep(.panRight, speed: 0.5, duration: 0.08)
+        ]
+        return await executeSteps(steps, dockController: dockController, needsReturnToCenter: false)
+    }
+    
+    /// 执行动作步骤序列
+    private func executeSteps(_ steps: [FastMotionStep], dockController: (any DockController)?, needsReturnToCenter: Bool = true) async -> Bool {
         for (index, step) in steps.enumerated() {
-            print("📍 执行第 \(index + 1) 步: \(step)")
+            print("🚀 执行快速动作步骤 \(index + 1)/\(steps.count): \(step.direction) 速度:\(step.speed) 时长:\(step.duration)s")
             
-            let success = await executeOrientationStep(step, dockController: dockController)
-            if !success {
-                print("❌ 第 \(index + 1) 步执行失败")
-                return false
-            }
+            // 执行动作
+            await dockController?.handleChevronTapped(chevronType: step.direction, speed: step.speed)
+            
+            // 等待动作时间（更短的等待）
+            try? await Task.sleep(nanoseconds: UInt64(step.duration * Double(NSEC_PER_SEC)))
         }
         
-        print("✅ 方向序列动作执行完成")
+        // 仅在需要时执行额外的回中心动作（用于简单动作或兜底保险）
+        if needsReturnToCenter {
+            print("🎯 执行额外的回中心动作")
+            await dockController?.handleChevronTapped(chevronType: .tiltUp, speed: 0.5)
+            try? await Task.sleep(nanoseconds: NSEC_PER_SEC / 10) // 0.1秒
+            await dockController?.handleChevronTapped(chevronType: .panLeft, speed: 0.3)
+            try? await Task.sleep(nanoseconds: NSEC_PER_SEC / 20) // 0.05秒
+        }
+        
         return true
     }
     
-    /// 执行单个方向步骤
-    private func executeOrientationStep(_ step: OrientationStep, dockController: (any DockController)?) async -> Bool {
-        // 修复关键问题：直接使用DockController的handleChevronTapped方法
-        do {
-            switch step {
-            case .nod(let angle, let duration):
-                // 使用现有的handleChevronTapped方法来模拟点头动作
-                if angle > 0 {
-                    // 向下点头
-                    await dockController?.handleChevronTapped(chevronType: .tiltDown, speed: abs(angle) / duration / 100)
-                    return true
-                } else {
-                    // 向上抬头
-                    await dockController?.handleChevronTapped(chevronType: .tiltUp, speed: abs(angle) / duration / 100)
-                    return true
-                }
-                
-            case .shake(let angle, let duration):
-                // 使用现有的handleChevronTapped方法来模拟摇头动作
-                if angle > 0 {
-                    // 向右摇头
-                    await dockController?.handleChevronTapped(chevronType: .panRight, speed: abs(angle) / duration / 100)
-                    return true
-                } else {
-                    // 向左摇头
-                    await dockController?.handleChevronTapped(chevronType: .panLeft, speed: abs(angle) / duration / 100)
-                    return true
-                }
-                
-            case .roll(_, let duration):
-                // 翻滚动作暂时不支持，直接等待
-                try await Task.sleep(nanoseconds: UInt64(duration * Double(NSEC_PER_SEC)))
-                return true
-                
-            case .center(let duration):
-                // 回到中心位置 - 使用小幅度的相反运动来归中
-                await dockController?.handleChevronTapped(chevronType: .tiltUp, speed: 0.1)
-                try await Task.sleep(nanoseconds: UInt64(duration * 0.5 * Double(NSEC_PER_SEC)))
-                await dockController?.handleChevronTapped(chevronType: .tiltDown, speed: 0.1)
-                try await Task.sleep(nanoseconds: UInt64(duration * 0.5 * Double(NSEC_PER_SEC)))
-                return true
-                
-            case .pause(let duration):
-                // 暂停等待
-                try await Task.sleep(nanoseconds: UInt64(duration * Double(NSEC_PER_SEC)))
-                return true
-            }
-            
-        } catch {
-            print("❌ 执行方向步骤失败: \(error)")
-            return false
-        }
+    // MARK: - Legacy Support
+    
+    /// 兼容旧接口
+    func getEnhancedMotorActionForMood(_ mood: RobotMood) -> FastMotorAction? {
+        return getMotorActionForMood(mood)
     }
     
-    /// 执行角速度序列动作
-    private func executeVelocitySequence(_ steps: [VelocityStep], dockController: (any DockController)?) async -> Bool {
-        print("⚡ 开始执行角速度序列动作，共 \(steps.count) 步")
-        
-        for (index, step) in steps.enumerated() {
-            print("📍 执行第 \(index + 1) 步: \(step)")
-            
-            let success = await executeVelocityStep(step, dockController: dockController)
-            if !success {
-                print("❌ 第 \(index + 1) 步执行失败")
-                return false
-            }
-        }
-        
-        print("✅ 角速度序列动作执行完成")
-        return true
-    }
-    
-    /// 执行单个角速度步骤
-    private func executeVelocityStep(_ step: VelocityStep, dockController: (any DockController)?) async -> Bool {
-        do {
-            switch step {
-            case .angularVelocity(let pitch, let yaw, let _, let duration):
-                // 使用连续的小动作来模拟角速度
-                let steps = Int(duration * 10) // 每0.1秒一个动作
-                
-                for _ in 0..<steps {
-                    if yaw != 0 {
-                        let speed = abs(yaw) * 0.1 // 调整速度比例
-                        if yaw > 0 {
-                            await dockController?.handleChevronTapped(chevronType: .panRight, speed: speed)
-                        } else {
-                            await dockController?.handleChevronTapped(chevronType: .panLeft, speed: speed)
-                        }
-                    }
-                    
-                    if pitch != 0 {
-                        let speed = abs(pitch) * 0.1 // 调整速度比例
-                        if pitch > 0 {
-                            await dockController?.handleChevronTapped(chevronType: .tiltDown, speed: speed)
-                        } else {
-                            await dockController?.handleChevronTapped(chevronType: .tiltUp, speed: speed)
-                        }
-                    }
-                    
-                    try await Task.sleep(nanoseconds: NSEC_PER_SEC / 10) // 0.1秒
-                }
-                return true
-                
-            case .tremble(let intensity, let duration):
-                // 颤抖效果 - 快速随机运动
-                let steps = Int(duration * 10) // 每0.1秒改变一次
-                
-                for _ in 0..<steps {
-                    let randomDirection = Int.random(in: 0...3)
-                    let speed = intensity * 0.1
-                    
-                    switch randomDirection {
-                    case 0:
-                        await dockController?.handleChevronTapped(chevronType: .panLeft, speed: speed)
-                    case 1:
-                        await dockController?.handleChevronTapped(chevronType: .panRight, speed: speed)
-                    case 2:
-                        await dockController?.handleChevronTapped(chevronType: .tiltUp, speed: speed)
-                    case 3:
-                        await dockController?.handleChevronTapped(chevronType: .tiltDown, speed: speed)
-                    default:
-                        break
-                    }
-                    
-                    try await Task.sleep(nanoseconds: NSEC_PER_SEC / 10) // 0.1秒
-                }
-                return true
-                
-            case .stop(let duration):
-                // 停止运动
-                try await Task.sleep(nanoseconds: UInt64(duration * Double(NSEC_PER_SEC)))
-                return true
-                
-            case .center(let duration):
-                // 回到中心位置
-                return await executeOrientationStep(.center(duration: duration), dockController: dockController)
-            }
-            
-        } catch {
-            print("❌ 执行角速度步骤失败: \(error)")
-            return false
+    /// 兼容旧接口
+    func executeEnhancedMotorAction(_ action: Any, for mood: RobotMood, dockController: (any DockController)?) async {
+        if let fastAction = action as? FastMotorAction {
+            await executeMotorAction(fastAction, for: mood, dockController: dockController)
+        } else if let fastAction = getMotorActionForMood(mood) {
+            await executeMotorAction(fastAction, for: mood, dockController: dockController)
         }
     }
 } 

@@ -38,7 +38,7 @@ struct RobotFaceView: View {
     
     // 动画控制器
     @State private var moodAnimator = MoodAnimationController()
-    @State private var motorExecutor = MotorActionExecutor()
+    @State private var motorExecutor = FastMotorActionExecutor()  // 使用新的快速电机系统
     
     private let allMoods: [RobotMood] = RobotMood.allCases
     
@@ -502,11 +502,11 @@ struct RobotFaceView: View {
     
     private func performMotorActionForMood(_ mood: RobotMood) {
         guard let motorAction = motorExecutor.getMotorActionForMood(mood) else {
-            print("ℹ️ 表情 \(mood) 没有对应的电机动作")
+            print("ℹ️ 表情 \(mood) 没有对应的快速电机动作")
             return
         }
         
-        print("🤖 开始为表情 \(mood) 执行电机动作: \(motorAction)")
+        print("🚀 开始为表情 \(mood) 执行快速电机动作: \(motorAction)")
         
         Task {
             await motorExecutor.executeMotorAction(motorAction, for: mood, dockController: dockController)
