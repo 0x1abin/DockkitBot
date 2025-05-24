@@ -1,5 +1,5 @@
 /*
-See the LICENSE.txt file for this sample’s licensing information.
+See the LICENSE.txt file for this sample's licensing information.
 
 Abstract:
 The main user interface for the sample app.
@@ -162,6 +162,9 @@ struct ContentView<CameraModel: Camera, DockControllerModel: DockController>: Vi
                 CameraUI(camera: camera, dockController: dockController)
             }
         }
+        .statusBarHidden(dockController.dockAccessoryFeatures.trackingMode == .robotFace)
+        .persistentSystemOverlays(dockController.dockAccessoryFeatures.trackingMode == .robotFace ? .hidden : .automatic)
+        .animation(.easeInOut(duration: 0.3), value: dockController.dockAccessoryFeatures.trackingMode)
     }
     
     /// Convert the chevron type to a type corrected for the current camera orientation.
