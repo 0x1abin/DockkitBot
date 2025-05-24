@@ -23,7 +23,6 @@ struct RobotFaceView: View {
     // 表情切换状态
     @State private var currentMoodIndex: Int = 0
     @State private var isManualMoodMode: Bool = false
-    @State private var showMoodLabel: Bool = false
     
     // 点击反馈效果
     @State private var showTapFeedback: Bool = false
@@ -106,48 +105,45 @@ struct RobotFaceView: View {
                     modernStatusIndicator(for: geometry)
                 }
                 
-                // 表情标签（点击时显示）
-                if showMoodLabel {
-                    VStack {
-                        Spacer()
-                        HStack {
-                            Spacer()
-                            moodLabel
-                            Spacer()
-                        }
-                        Spacer()
-                        Spacer()
-                    }
-                }
-                
                 // 点击提示（仅在第一次显示）
                 if !isManualMoodMode && robotFaceState.mood == .normal {
                     VStack {
+                        Spacer()
                         HStack {
                             Spacer()
                             tapHintLabel
                         }
-                        .padding(.top, 50)
+                        .padding(.bottom, isLandscape(geometry) ? 60 : 100)
                         .padding(.trailing, 30)
-                        Spacer()
                     }
                 }
                 
-                // 调试信息显示
+                // 表情/状态显示 - 在TRACKING状态上方右对齐，添加相同样式的背景
                 if isManualMoodMode {
                     VStack {
-                        HStack {
-                            Text("手动模式: \(currentMoodIndex)/\(allMoods.count)")
-                                .font(.caption)
-                                .foregroundColor(.white.opacity(0.7))
-                                .padding(8)
-                                .background(Color.black.opacity(0.5))
-                                .cornerRadius(8)
-                            Spacer()
-                        }
-                        .padding(.top, 100)
-                        .padding(.leading, 20)
                         Spacer()
+                        VStack(spacing: 12) {  // 增加间距避免重叠
+                            HStack {
+                                Spacer()
+                                Text(moodDisplayName(robotFaceState.mood))
+                                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                    .foregroundColor(.white.opacity(0.7))
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        Capsule()
+                                            .fill(Color.black.opacity(0.4))
+                                            .overlay(
+                                                Capsule()
+                                                    .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+                                            )
+                                    )
+                            }
+                            // 为TRACKING状态指示器留出空间
+                            Spacer().frame(height: 38)  // 调整高度适应新的背景框
+                        }
+                        .padding(.bottom, isLandscape(geometry) ? 60 : 40)
+                        .padding(.trailing, isLandscape(geometry) ? 20 : 15)  // 调整右边距与背景框对齐
                     }
                 }
             }
@@ -331,29 +327,6 @@ struct RobotFaceView: View {
     // MARK: - 新增UI组件
     
     @ViewBuilder
-    private var moodLabel: some View {
-        Text(moodDisplayName(robotFaceState.mood))
-            .font(.system(size: 26, weight: .bold, design: .rounded))
-            .foregroundColor(.white)
-            .padding(.horizontal, 24)
-            .padding(.vertical, 14)
-            .background(
-                Capsule()
-                    .fill(Color.black.opacity(0.85))
-                    .overlay(
-                        Capsule()
-                            .stroke(moodColor(robotFaceState.mood), lineWidth: 3)
-                            .shadow(color: moodColor(robotFaceState.mood), radius: 8)
-                    )
-            )
-            .shadow(color: moodColor(robotFaceState.mood).opacity(0.6), radius: 15)
-            .scaleEffect(showMoodLabel ? 1.0 : 0.3)
-            .opacity(showMoodLabel ? 1.0 : 0.0)
-            .rotationEffect(.degrees(showMoodLabel ? 0 : 180))
-            .animation(.spring(response: 0.4, dampingFraction: 0.6), value: showMoodLabel)
-    }
-    
-    @ViewBuilder
     private var tapHintLabel: some View {
         HStack(spacing: 8) {
             Image(systemName: "hand.tap")
@@ -429,9 +402,6 @@ struct RobotFaceView: View {
                 scaleEffect = 1.0  // 恢复原大小
             }
             
-            // 立即显示表情标签，使用更动感的动画
-            showMoodLabel = true
-            
             // 添加轻微的屏幕震动效果（通过快速缩放）
             withAnimation(.spring(response: 0.15, dampingFraction: 0.4)) {
                 scaleEffect = 1.05
@@ -444,13 +414,6 @@ struct RobotFaceView: View {
                 }
             }
         }
-        
-        // 1.5秒后隐藏表情标签（缩短显示时间）
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            withAnimation(.easeOut(duration: 0.25)) {
-                showMoodLabel = false
-            }
-        }
     }
     
     private func moodDisplayName(_ mood: RobotMood) -> String {
@@ -459,7 +422,7 @@ struct RobotFaceView: View {
         case .happy: return "😊 开心"
         case .sad: return "😢 悲伤"
         case .excited: return "🤩 兴奋"
-        case .sleepy: return "😴 困倦"
+        case .sleepy: return "�� 困倦"
         case .anger: return "😡 愤怒"
         case .disgust: return "🤢 厌恶"
         case .fear: return "😰 恐惧"
