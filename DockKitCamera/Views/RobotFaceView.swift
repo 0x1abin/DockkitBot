@@ -28,6 +28,11 @@ struct RobotFaceView: View {
     @State private var showTapFeedback: Bool = false
     @State private var tapLocation: CGPoint = .zero
     
+    // 长按随机表情循环状态
+    @State private var isRandomMoodMode: Bool = false
+    @State private var randomMoodTimer: Timer?
+    @State private var showLongPressHint: Bool = false
+    
     // 特殊动画状态
     @State private var specialAnimationOffset: CGFloat = 0
     @State private var rotationAngle: Double = 0
@@ -44,9 +49,16 @@ struct RobotFaceView: View {
                     .ignoresSafeArea(.all)
                     .contentShape(Rectangle()) // 确保整个区域可点击
                     .onTapGesture { location in
-                        print("🔥 点击检测到，位置: \(location)")
-                        tapLocation = location
-                        cycleThroughMoods()
+                        if !isRandomMoodMode {  // 只在非随机模式时响应点击
+                            print("🔥 点击检测到，位置: \(location)")
+                            tapLocation = location
+                            cycleThroughMoods()
+                        }
+                    }
+                    .onLongPressGesture(minimumDuration: 1.0, maximumDistance: 50) {
+                        // 长按触发随机表情模式
+                        print("🎲 长按检测到，开始随机表情循环")
+                        toggleRandomMoodMode()
                     }
                 
                 // 机器人脸部容器 - 横屏时放大1.3倍
@@ -118,6 +130,19 @@ struct RobotFaceView: View {
                     }
                 }
                 
+                // 长按随机模式提示
+                if showLongPressHint {
+                    VStack {
+                        HStack {
+                            Spacer()
+                            randomModeLabel
+                            Spacer()
+                        }
+                        .padding(.top, geometry.safeAreaInsets.top + (isLandscape(geometry) ? 20 : 40))
+                        Spacer()
+                    }
+                }
+                
                 // 表情/状态显示 - 在TRACKING状态上方右对齐，添加相同样式的背景
                 if isManualMoodMode {
                     VStack {
@@ -155,6 +180,10 @@ struct RobotFaceView: View {
             print("🎯 RobotFaceView 出现，当前表情: \(robotFaceState.mood)")
             startLEDAnimations()
             startMoodAnimations()
+        }
+        .onDisappear {
+            // 清理定时器
+            stopRandomMoodMode()
         }
         .onChange(of: robotFaceState.mood) { oldValue, newValue in
             print("🎭 表情变化: \(oldValue) -> \(newValue)")
@@ -366,6 +395,53 @@ struct RobotFaceView: View {
         .animation(.easeOut(duration: 0.4), value: showTapFeedback)
     }
     
+    @ViewBuilder
+    private var randomModeLabel: some View {
+        HStack(spacing: 8) {
+            if isRandomMoodMode {
+                // 随机模式激活时显示动画点
+                Circle()
+                    .fill(Color.orange)
+                    .frame(width: 8, height: 8)
+                    .scaleEffect(ledBrightness)
+                    .shadow(color: Color.orange, radius: 4)
+                Text("🎲 随机模式已启动")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.orange)
+            } else {
+                // 首次长按提示
+                Image(systemName: "hand.point.up.left")
+                    .font(.system(size: 14))
+                Text("长按启动随机模式")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.white.opacity(0.6))
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(
+            Capsule()
+                .fill(
+                    isRandomMoodMode ? 
+                    Color.orange.opacity(0.2) : 
+                    Color.black.opacity(0.5)
+                )
+                .overlay(
+                    Capsule()
+                        .stroke(
+                            isRandomMoodMode ? 
+                            Color.orange.opacity(0.5) : 
+                            Color.white.opacity(0.1), 
+                            lineWidth: 1
+                        )
+                )
+        )
+        .scaleEffect(showLongPressHint ? 1.0 : 0.8)
+        .opacity(1.0)  // 始终不透明，因为只在需要时显示
+        .animation(.spring(response: 0.4, dampingFraction: 0.6), value: isRandomMoodMode)
+        .animation(.easeInOut(duration: 0.3), value: showLongPressHint)
+    }
+    
     // MARK: - 表情切换逻辑
     
     private func cycleThroughMoods() {
@@ -422,7 +498,7 @@ struct RobotFaceView: View {
         case .happy: return "😊 开心"
         case .sad: return "😢 悲伤"
         case .excited: return "🤩 兴奋"
-        case .sleepy: return "�� 困倦"
+        case .sleepy: return "😪 困倦"
         case .anger: return "😡 愤怒"
         case .disgust: return "🤢 厌恶"
         case .fear: return "😰 恐惧"
@@ -764,6 +840,72 @@ struct RobotFaceView: View {
         default:
             break
         }
+    }
+    
+    // MARK: - 长按随机表情模式
+    
+    private func toggleRandomMoodMode() {
+        isRandomMoodMode.toggle()
+        robotFaceState.isManualMoodMode = isRandomMoodMode  // 同步状态
+        
+        if isRandomMoodMode {
+            startRandomMoodMode()
+            showLongPressHint = true
+            // 3秒后隐藏提示
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                showLongPressHint = false
+            }
+        } else {
+            stopRandomMoodMode()
+        }
+    }
+    
+    private func startRandomMoodMode() {
+        print("🎲 开始随机表情循环模式")
+        scheduleNextRandomMood()
+    }
+    
+    private func scheduleNextRandomMood() {
+        // 生成5-15秒的随机间隔
+        let randomInterval = Double.random(in: 5.0...15.0)
+        print("⏰ 下一个随机表情将在 \(String(format: "%.1f", randomInterval)) 秒后显示")
+        
+        randomMoodTimer = Timer.scheduledTimer(withTimeInterval: randomInterval, repeats: false) { _ in
+            if self.isRandomMoodMode {
+                self.showRandomMood()
+                self.scheduleNextRandomMood()  // 递归安排下一个随机表情
+            }
+        }
+    }
+    
+    private func showRandomMood() {
+        // 生成随机表情（排除当前表情）
+        var availableMoods = allMoods
+        availableMoods.removeAll { $0 == robotFaceState.mood }
+        
+        if let randomMood = availableMoods.randomElement() {
+            print("🎭 随机切换到表情: \(randomMood)")
+            
+            // 更新当前索引以保持同步
+            if let index = allMoods.firstIndex(of: randomMood) {
+                currentMoodIndex = index
+            }
+            
+            // 触发表情切换动画
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                robotFaceState.mood = randomMood
+            }
+            
+            // 触发特殊动画
+            triggerMoodAnimation(for: randomMood)
+        }
+    }
+    
+    private func stopRandomMoodMode() {
+        print("🛑 停止随机表情循环模式")
+        randomMoodTimer?.invalidate()
+        randomMoodTimer = nil
+        isManualMoodMode = true  // 保持手动模式状态
     }
 }
 
