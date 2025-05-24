@@ -201,11 +201,22 @@ final class DockControllerModel: DockController {
                 y: primaryPerson.rect.midY
             )
             
-            // Convert face position to eye movement (inverted for natural look)
-            let rawEyeX = 1.0 - faceCenter.x // Invert X for mirror effect
-            let rawEyeY = faceCenter.y
+            // 修复坐标映射 - 确保眼睛跟随方向正确
+            // 注意：faceCenter坐标系原点在左上角，值域[0,1]
+            // 眼睛坐标系中 (0.5, 0.5) 是中心位置
             
-            // Simple eye tracking - constrain to reasonable bounds
+            // X轴：直接使用人脸的X坐标（不反转）
+            // 当人脸在屏幕左侧时，眼睛应该看左边
+            // 当人脸在屏幕右侧时，眼睛应该看右边
+            let rawEyeX = faceCenter.x
+            
+            // Y轴：反转Y坐标以获得自然的跟随效果
+            // 当人脸在屏幕上方时(faceCenter.y < 0.5)，眼睛应该看上方(eyeY < 0.5)
+            // 当人脸在屏幕下方时(faceCenter.y > 0.5)，眼睛应该看下方(eyeY > 0.5)
+            // 由于原始坐标系可能不符合这个预期，我们反转Y轴
+            let rawEyeY = 1.0 - faceCenter.y
+            
+            // 应用合理的范围约束
             let constrainedX = max(0.1, min(0.9, rawEyeX))
             let constrainedY = max(0.2, min(0.8, rawEyeY))
             
