@@ -23,17 +23,9 @@ struct RobotFaceView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // 深色渐变背景
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.08, green: 0.08, blue: 0.12),
-                        Color(red: 0.05, green: 0.05, blue: 0.08),
-                        Color.black
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea(.all)
+                // 纯黑色背景
+                Color.black
+                    .ignoresSafeArea(.all)
                 
                 // 机器人脸部外壳轮廓（白色圆润外形）
                 modernRobotShell(for: geometry)
@@ -109,19 +101,33 @@ struct RobotFaceView: View {
     
     @ViewBuilder
     private func modernRobotShell(for geometry: GeometryProxy) -> some View {
-        // 简化的机器人外壳 - 更微妙的效果
+        // 机器人外壳 - 内部渐变背景 + 边框
         RoundedRectangle(cornerRadius: faceHeight(for: geometry) * 0.25)
-            .stroke(
+            .fill(
                 LinearGradient(
                     colors: [
-                        Color.white.opacity(0.08),
-                        Color.white.opacity(0.03),
-                        Color.clear
+                        Color(red: 0.08, green: 0.08, blue: 0.12),
+                        Color(red: 0.05, green: 0.05, blue: 0.08),
+                        Color(red: 0.05, green: 0.05, blue: 0.08)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
-                ),
-                lineWidth: 1
+                )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: faceHeight(for: geometry) * 0.25)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.08),
+                                Color.white.opacity(0.03),
+                                Color.clear
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
             )
             .frame(
                 width: faceHeight(for: geometry) * 1.2,
