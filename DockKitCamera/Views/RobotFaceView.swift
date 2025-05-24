@@ -19,183 +19,153 @@ struct RobotFaceView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // 全屏背景渐变
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color.black,
-                        Color.black.opacity(0.95),
-                        Color.black
-                    ]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea(.all)
+                // 纯黑背景
+                Color.black
+                    .ignoresSafeArea(.all)
                 
-                // 主要机器人脸部内容
+                // 极简机器人脸部
                 VStack(spacing: 0) {
-                    // 完全无视安全区域，使用整个屏幕空间
                     Spacer()
                     
-                    // 眼睛区域
-                    HStack(spacing: eyeSpacing(for: geometry)) {
+                    // 眼睛区域 - 固定比例
+                    HStack(spacing: faceWidth(for: geometry) * 0.3) {
                         // 左眼
-                        RobotEyeView(
+                        MinimalEyeView(
                             eyePosition: robotFaceState.leftEyePosition,
                             isBlinking: robotFaceState.isBlinking,
                             mood: robotFaceState.mood,
-                            eyeSize: eyeSize(for: geometry),
-                            pupilSize: pupilSize(for: geometry)
+                            eyeSize: eyeSize(for: geometry)
                         )
                         
                         // 右眼
-                        RobotEyeView(
+                        MinimalEyeView(
                             eyePosition: robotFaceState.rightEyePosition,
                             isBlinking: robotFaceState.isBlinking,
                             mood: robotFaceState.mood,
-                            eyeSize: eyeSize(for: geometry),
-                            pupilSize: pupilSize(for: geometry)
+                            eyeSize: eyeSize(for: geometry)
                         )
                     }
                     
-                    // 眼睛到嘴巴的间距
+                    // 眼睛到嘴巴的固定间距
                     Spacer()
-                        .frame(height: eyeToMouthSpacing(for: geometry))
+                        .frame(height: faceWidth(for: geometry) * 0.25)
                     
                     // 嘴巴区域
-                    robotMouth(for: geometry)
+                    minimalMouth(for: geometry)
                     
-                    // 下部空间
                     Spacer()
                 }
                 
-                // 状态指示器 - 位于左上角，完全忽略安全区域
-                VStack {
-                    HStack {
-                        statusIndicator(for: geometry)
-                            .padding(.leading, 20)
-                            .padding(.top, 10)
-                        Spacer()
-                    }
-                    Spacer()
-                }
+                // 简化的状态指示器
+                simpleStatusIndicator(for: geometry)
             }
         }
-        .ignoresSafeArea(.all) // 完全忽略所有安全区域
-        .statusBarHidden(true) // 隐藏状态栏
-        .persistentSystemOverlays(.hidden) // 隐藏Home Indicator等系统覆盖层
+        .ignoresSafeArea(.all)
+        .statusBarHidden(true)
+        .persistentSystemOverlays(.hidden)
         .onAppear {
             startBlinkingAnimation()
         }
     }
     
-    // MARK: - Layout Calculations
+    // MARK: - 固定比例计算
     
-    private func isLandscape(_ geometry: GeometryProxy) -> Bool {
-        geometry.size.width > geometry.size.height
+    private func faceWidth(for geometry: GeometryProxy) -> CGFloat {
+        // 使用固定的脸部宽度比例，不区分横竖屏
+        return min(geometry.size.width, geometry.size.height) * 0.7
     }
     
     private func eyeSize(for geometry: GeometryProxy) -> CGFloat {
-        let baseSize = min(geometry.size.width, geometry.size.height)
-        return isLandscape(geometry) ? baseSize * 0.15 : baseSize * 0.18
+        // 眼睛大小为脸部宽度的18%
+        return faceWidth(for: geometry) * 0.18
     }
     
-    private func pupilSize(for geometry: GeometryProxy) -> CGFloat {
-        eyeSize(for: geometry) * 0.55
-    }
-    
-    private func eyeSpacing(for geometry: GeometryProxy) -> CGFloat {
-        let screenWidth = geometry.size.width
-        return isLandscape(geometry) ? screenWidth * 0.3 : screenWidth * 0.25
-    }
-    
-    private func eyeToMouthSpacing(for geometry: GeometryProxy) -> CGFloat {
-        let screenHeight = geometry.size.height
-        return isLandscape(geometry) ? screenHeight * 0.15 : screenHeight * 0.2
-    }
-    
-    // MARK: - UI Components
+    // MARK: - 极简UI组件
     
     @ViewBuilder
-    private func robotMouth(for geometry: GeometryProxy) -> some View {
-        let screenWidth = geometry.size.width
-        let screenHeight = geometry.size.height
-        let mouthWidth = isLandscape(geometry) ? screenWidth * 0.12 : screenWidth * 0.15
-        let mouthHeight = isLandscape(geometry) ? screenHeight * 0.08 : screenHeight * 0.06
+    private func minimalMouth(for geometry: GeometryProxy) -> some View {
+        let mouthWidth = faceWidth(for: geometry) * 0.15
         
         switch robotFaceState.mood {
         case .normal:
-            // 简单的线条嘴巴
-            RoundedRectangle(cornerRadius: 3)
-                .fill(Color.white.opacity(0.9))
-                .frame(width: mouthWidth * 0.7, height: 4)
+            // 简单线条
+            Rectangle()
+                .fill(Color.white.opacity(0.8))
+                .frame(width: mouthWidth, height: 3)
                 .animation(.easeInOut(duration: 0.3), value: robotFaceState.mood)
                 
         case .happy:
-            // 可爱的弧形笑脸
-            Arc(startAngle: .degrees(0), endAngle: .degrees(180))
-                .stroke(Color.white.opacity(0.9), lineWidth: 6)
-                .frame(width: mouthWidth, height: mouthHeight)
-                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: robotFaceState.mood)
+            // 简单弧形笑脸
+            Arc(startAngle: .degrees(20), endAngle: .degrees(160))
+                .stroke(Color.white.opacity(0.8), lineWidth: 4)
+                .frame(width: mouthWidth, height: mouthWidth * 0.6)
+                .animation(.spring(response: 0.5, dampingFraction: 0.8), value: robotFaceState.mood)
                 
         case .sad:
-            // 倒转的弧形
-            Arc(startAngle: .degrees(180), endAngle: .degrees(360))
-                .stroke(Color.white.opacity(0.7), lineWidth: 6)
-                .frame(width: mouthWidth, height: mouthHeight)
+            // 简单倒弧
+            Arc(startAngle: .degrees(200), endAngle: .degrees(340))
+                .stroke(Color.white.opacity(0.6), lineWidth: 4)
+                .frame(width: mouthWidth, height: mouthWidth * 0.4)
                 .animation(.easeInOut(duration: 0.4), value: robotFaceState.mood)
                 
         case .excited:
-            // 兴奋的圆形嘴巴
+            // 简单圆形
             Circle()
-                .fill(Color.white.opacity(0.9))
-                .frame(width: mouthWidth * 0.6, height: mouthWidth * 0.6)
+                .fill(Color.white.opacity(0.8))
+                .frame(width: mouthWidth * 0.7, height: mouthWidth * 0.7)
                 .scaleEffect(robotFaceState.isTracking ? 1.1 : 1.0)
-                .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: robotFaceState.isTracking)
+                .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: robotFaceState.isTracking)
                 
         case .sleepy:
-            // 困倦的椭圆形
+            // 简单椭圆
             Ellipse()
                 .fill(Color.white.opacity(0.5))
-                .frame(width: mouthWidth, height: 6)
+                .frame(width: mouthWidth, height: 4)
                 .animation(.easeInOut(duration: 0.3), value: robotFaceState.mood)
         }
     }
     
     @ViewBuilder
-    private func statusIndicator(for geometry: GeometryProxy) -> some View {
-        let fontSize: CGFloat = isLandscape(geometry) ? 12 : 14
-        let circleSize: CGFloat = isLandscape(geometry) ? 8 : 10
-        
-        HStack(spacing: 6) {
-            Circle()
-                .fill(robotFaceState.isTracking ? Color.green.opacity(0.8) : Color.orange.opacity(0.8))
-                .frame(width: circleSize, height: circleSize)
-                .animation(.easeInOut(duration: 0.5), value: robotFaceState.isTracking)
-            
-            Text(robotFaceState.isTracking ? "👁️" : "🔍")
-                .font(.system(size: fontSize))
-                .opacity(0.8)
+    private func simpleStatusIndicator(for geometry: GeometryProxy) -> some View {
+        VStack {
+            HStack {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(robotFaceState.isTracking ? Color.green : Color.orange)
+                        .frame(width: 8, height: 8)
+                        .animation(.easeInOut(duration: 0.5), value: robotFaceState.isTracking)
+                    
+                    Text(robotFaceState.isTracking ? "👁️" : "🔍")
+                        .font(.system(size: 12))
+                        .opacity(0.8)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule()
+                        .fill(Color.black.opacity(0.5))
+                )
+                .overlay(
+                    Capsule()
+                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                )
+                .padding(.leading, 20)
+                .padding(.top, 10)
+                
+                Spacer()
+            }
+            Spacer()
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(
-            Capsule()
-                .fill(Color.black.opacity(0.3))
-        )
-        .overlay(
-            Capsule()
-                .stroke(Color.white.opacity(0.1), lineWidth: 1)
-        )
     }
     
     private func startBlinkingAnimation() {
         Timer.scheduledTimer(withTimeInterval: Double.random(in: 3...6), repeats: true) { _ in
-            withAnimation(.easeInOut(duration: 0.12)) {
+            withAnimation(.easeInOut(duration: 0.1)) {
                 robotFaceState.isBlinking = true
             }
             
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-                withAnimation(.easeInOut(duration: 0.12)) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.easeInOut(duration: 0.1)) {
                     robotFaceState.isBlinking = false
                 }
             }
@@ -203,93 +173,43 @@ struct RobotFaceView: View {
     }
 }
 
-/// A view that represents a single robot eye with animated pupil.
-struct RobotEyeView: View {
+/// 极简眼睛视图
+struct MinimalEyeView: View {
     let eyePosition: CGPoint
     let isBlinking: Bool
     let mood: RobotMood
     let eyeSize: CGFloat
-    let pupilSize: CGFloat
     
     var body: some View {
         ZStack {
-            // 眼白 - 更加柔和的设计
+            // 简单的白色圆形眼白
             Circle()
-                .fill(
-                    RadialGradient(
-                        gradient: Gradient(colors: [
-                            Color.white,
-                            Color.white.opacity(0.95),
-                            Color.gray.opacity(0.1)
-                        ]),
-                        center: .center,
-                        startRadius: 0,
-                        endRadius: eyeSize / 2
-                    )
-                )
-                .frame(width: eyeSize, height: isBlinking ? 6 : eyeSize)
-                .overlay(
-                    Circle()
-                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                        .frame(width: eyeSize, height: isBlinking ? 6 : eyeSize)
-                )
-                .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+                .fill(Color.white)
+                .frame(width: eyeSize, height: isBlinking ? 4 : eyeSize)
+                .animation(.easeInOut(duration: 0.1), value: isBlinking)
             
             if !isBlinking {
-                // 瞳孔 - 更生动的设计
+                // 简单的黑色瞳孔
                 Circle()
-                    .fill(
-                        RadialGradient(
-                            gradient: Gradient(colors: [
-                                pupilColor.opacity(0.9),
-                                pupilColor,
-                                Color.black
-                            ]),
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: pupilSize / 2
-                        )
-                    )
-                    .frame(width: pupilSize, height: pupilSize)
+                    .fill(pupilColor)
+                    .frame(width: eyeSize * 0.5, height: eyeSize * 0.5)
                     .offset(
-                        x: (eyePosition.x - 0.5) * (eyeSize - pupilSize) * 0.75,
-                        y: (eyePosition.y - 0.5) * (eyeSize - pupilSize) * 0.75
+                        x: (eyePosition.x - 0.5) * eyeSize * 0.3,
+                        y: (eyePosition.y - 0.5) * eyeSize * 0.3
                     )
-                    .animation(.spring(response: 0.4, dampingFraction: 0.8), value: eyePosition)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.8), value: eyePosition)
                 
-                // 高光 - 更加立体
+                // 简单的白色高光
                 Circle()
-                    .fill(
-                        RadialGradient(
-                            gradient: Gradient(colors: [
-                                Color.white.opacity(0.9),
-                                Color.white.opacity(0.4),
-                                Color.clear
-                            ]),
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: pupilSize * 0.15
-                        )
-                    )
-                    .frame(width: pupilSize * 0.3, height: pupilSize * 0.3)
+                    .fill(Color.white)
+                    .frame(width: eyeSize * 0.15, height: eyeSize * 0.15)
                     .offset(
-                        x: (eyePosition.x - 0.5) * (eyeSize - pupilSize) * 0.75 - pupilSize * 0.15,
-                        y: (eyePosition.y - 0.5) * (eyeSize - pupilSize) * 0.75 - pupilSize * 0.15
+                        x: (eyePosition.x - 0.5) * eyeSize * 0.3 - eyeSize * 0.1,
+                        y: (eyePosition.y - 0.5) * eyeSize * 0.3 - eyeSize * 0.1
                     )
-                    .animation(.spring(response: 0.4, dampingFraction: 0.8), value: eyePosition)
-                
-                // 次级高光
-                Circle()
-                    .fill(Color.white.opacity(0.6))
-                    .frame(width: pupilSize * 0.12, height: pupilSize * 0.12)
-                    .offset(
-                        x: (eyePosition.x - 0.5) * (eyeSize - pupilSize) * 0.75 + pupilSize * 0.2,
-                        y: (eyePosition.y - 0.5) * (eyeSize - pupilSize) * 0.75 + pupilSize * 0.1
-                    )
-                    .animation(.spring(response: 0.4, dampingFraction: 0.8), value: eyePosition)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.8), value: eyePosition)
             }
         }
-        .animation(.easeInOut(duration: 0.12), value: isBlinking)
     }
     
     private var pupilColor: Color {
@@ -297,18 +217,18 @@ struct RobotEyeView: View {
         case .normal:
             return Color.black
         case .happy:
-            return Color.blue.opacity(0.8)
+            return Color.blue.opacity(0.9)
         case .sad:
             return Color.gray.opacity(0.8)
         case .excited:
-            return Color.orange.opacity(0.8)
+            return Color.orange.opacity(0.9)
         case .sleepy:
-            return Color.black.opacity(0.6)
+            return Color.black.opacity(0.7)
         }
     }
 }
 
-/// A simple arc shape for drawing mouth expressions.
+/// 简单弧形形状
 struct Arc: Shape {
     let startAngle: Angle
     let endAngle: Angle
