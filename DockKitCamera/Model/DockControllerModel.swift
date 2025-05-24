@@ -8,6 +8,7 @@ An object that provides the interface to the features of the connected DockKit a
 import SwiftUI
 import Combine
 import AVFoundation
+import os
 
 #if canImport(DockKit)
 import DockKit
@@ -188,6 +189,7 @@ final class DockControllerModel: DockController {
     }
     
     // MARK: - Robot Face Mode
+    
     /// Update robot eye positions based on tracked persons.
     private func updateRobotEyePositions(with trackedPersons: [DockAccessoryTrackedPerson]) {
         if let primaryPerson = trackedPersons.first {
@@ -200,15 +202,17 @@ final class DockControllerModel: DockController {
             )
             
             // Convert face position to eye movement (inverted for natural look)
-            let eyeX = 1.0 - faceCenter.x // Invert X for mirror effect
-            let eyeY = faceCenter.y
+            let rawEyeX = 1.0 - faceCenter.x // Invert X for mirror effect
+            let rawEyeY = faceCenter.y
             
-            // Apply some smoothing and constraints
-            let constrainedX = max(0.2, min(0.8, eyeX))
-            let constrainedY = max(0.3, min(0.7, eyeY))
+            // Simple eye tracking - constrain to reasonable bounds
+            let constrainedX = max(0.1, min(0.9, rawEyeX))
+            let constrainedY = max(0.2, min(0.8, rawEyeY))
             
-            robotFaceState.leftEyePosition = CGPoint(x: constrainedX, y: constrainedY)
-            robotFaceState.rightEyePosition = CGPoint(x: constrainedX, y: constrainedY)
+            withAnimation(.easeOut(duration: 0.2)) {
+                robotFaceState.leftEyePosition = CGPoint(x: constrainedX, y: constrainedY)
+                robotFaceState.rightEyePosition = CGPoint(x: constrainedX, y: constrainedY)
+            }
             
             // Update mood based on tracking confidence
             if let looking = primaryPerson.looking {
@@ -224,8 +228,10 @@ final class DockControllerModel: DockController {
             robotFaceState.isTracking = false
             robotFaceState.mood = .sleepy
             // Return eyes to center when no face is detected
-            robotFaceState.leftEyePosition = CGPoint(x: 0.5, y: 0.5)
-            robotFaceState.rightEyePosition = CGPoint(x: 0.5, y: 0.5)
+            withAnimation(.easeOut(duration: 0.3)) {
+                robotFaceState.leftEyePosition = CGPoint(x: 0.5, y: 0.5)
+                robotFaceState.rightEyePosition = CGPoint(x: 0.5, y: 0.5)
+            }
         }
     }
     

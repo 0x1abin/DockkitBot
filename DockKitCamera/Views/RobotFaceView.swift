@@ -251,6 +251,11 @@ struct VerticalLEDEyeView: View {
     let ledBrightness: Double
     let ledGlow: Double
     
+    // 眼球预测跟随状态
+    @State private var previousPosition: CGPoint = CGPoint(x: 0.5, y: 0.5)
+    @State private var predictedPosition: CGPoint = CGPoint(x: 0.5, y: 0.5)
+    @State private var positionHistory: [CGPoint] = []
+    
     var body: some View {
         ZStack {
             if !isBlinking {
@@ -262,6 +267,10 @@ struct VerticalLEDEyeView: View {
             }
         }
         .animation(.easeInOut(duration: 0.15), value: isBlinking)
+        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: predictedPosition) // 使用预测位置进行动画
+        .onChange(of: eyePosition) { oldValue, newValue in
+            updatePredictedPosition(newPosition: newValue)
+        }
     }
     
     // MARK: - 垂直LED条样式（根据设计图）
@@ -285,8 +294,9 @@ struct VerticalLEDEyeView: View {
                 )
                 .frame(width: eyeWidth * 2.5, height: eyeHeight * 1.3)
                 .blur(radius: 70 * ledGlow / 10) // 模糊70效果
+                .offset(eyeTrackingOffset) // 发光效果也跟随移动
             
-            // 主LED条 - 垂直蓝色渐变
+            // 主LED条 - 垂直蓝色渐变（带眼球跟随效果）
             RoundedRectangle(cornerRadius: 4) // 4PX圆角
                 .fill(
                     LinearGradient(
@@ -302,21 +312,7 @@ struct VerticalLEDEyeView: View {
                 .frame(width: eyeWidth, height: eyeHeight)
                 .shadow(color: designBlueColor.opacity(0.8), radius: 8, x: 0, y: 0)
                 .scaleEffect(ledBrightness)
-            
-            // 内部亮度指示 - 跟踪眼球位置（垂直移动）
-            RoundedRectangle(cornerRadius: 2)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.9),
-                            Color.white.opacity(0.6)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .frame(width: eyeWidth * 0.6, height: eyeHeight * 0.3)
-                .offset(eyeTrackingOffset)
+                .offset(eyeTrackingOffset) // LED条跟随眼球位置移动
         }
     }
     
@@ -347,9 +343,44 @@ struct VerticalLEDEyeView: View {
     
     private var eyeTrackingOffset: CGSize {
         CGSize(
-            width: 0, // 垂直LED条不需要水平偏移
-            height: (eyePosition.y - 0.5) * eyeHeight * 0.4 // 垂直方向跟踪
+            width: (predictedPosition.x - 0.5) * eyeWidth * 2.0, // 添加水平跟踪，使用2倍放大让移动更明显
+            height: (predictedPosition.y - 0.5) * eyeHeight * 0.4 // 使用预测位置进行垂直跟踪
         )
+    }
+    
+    private func updatePredictedPosition(newPosition: CGPoint) {
+        // 简化预测算法，让眼球跟随更直接
+        // 如果位置变化不大，直接使用当前位置
+        let positionChange = sqrt(pow(newPosition.x - previousPosition.x, 2) + pow(newPosition.y - previousPosition.y, 2))
+        
+        if positionChange < 0.01 {
+            // 位置变化很小，保持当前预测位置
+            return
+        }
+        
+        // 计算移动方向和速度
+        let velocity = CGPoint(
+            x: newPosition.x - previousPosition.x,
+            y: newPosition.y - previousPosition.y
+        )
+        
+        // 简单的预测：当前位置 + 小量的预测
+        let predictionFactor: CGFloat = 0.3 // 减少预测量
+        var predicted = CGPoint(
+            x: newPosition.x + velocity.x * predictionFactor,
+            y: newPosition.y + velocity.y * predictionFactor
+        )
+        
+        // 限制在合理范围内
+        predicted.x = max(0.1, min(0.9, predicted.x))
+        predicted.y = max(0.2, min(0.8, predicted.y))
+        
+        // 直接设置预测位置，使用快速动画
+        withAnimation(.easeOut(duration: 0.2)) {
+            predictedPosition = predicted
+        }
+        
+        previousPosition = newPosition
     }
 }
 

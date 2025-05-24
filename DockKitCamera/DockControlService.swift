@@ -8,6 +8,8 @@ An object that manages DockKit accessories and their control.
 import Foundation
 import AVFoundation
 import Combine
+import SwiftUI
+import os
 #if canImport(DockKit)
 import DockKit
 #endif
@@ -433,8 +435,8 @@ actor DockControlService {
     // MARK: - DockKit manual control
     func handleChevronTapped(chevronType: ChevronType, speed: Double = 0.2) async {
 #if !targetEnvironment(simulator)
-        if trackingMode != .manual {
-            // tracking has to be in manual mode to use chevrons.
+        guard trackingMode == .manual else {
+            logger.error("Enable manual control from DockKit menu to manually control the accessory.")
             return
         }
         
@@ -445,21 +447,24 @@ actor DockControlService {
         
         var velocity = Vector3D()
         
+        // Rotate `DockAccessory` according to the chevron (corrected to the camera orientation).
+        switch chevronType {
+        case .tiltUp:
+            velocity.x = -speed
+        case .tiltDown:
+            velocity.x = speed
+        case .panLeft:
+            velocity.y = -speed
+        case .panRight:
+            velocity.y = speed
+        }
+        
         do {
-            // Rotate `DockAccessory` according to the chevron (corrected to the camera orientation).
-            switch chevronType {
-            case .tiltUp:
-                velocity.x = -speed
-            case .tiltDown:
-                velocity.x = speed
-            case .panLeft:
-                velocity.y = -speed
-            case .panRight:
-                velocity.y = speed
-            }
             try await dockkitAccessory.setAngularVelocity(velocity)
+            try await Task.sleep(nanoseconds: NSEC_PER_SEC / 4) // 0.25 sec
+            try await dockkitAccessory.setAngularVelocity(Vector3D())
         } catch {
-            logger.error("Error executing chevron \(chevronType.rawValue) tap")
+            logger.error("Error handling chevron \(chevronType.rawValue): \(error)")
         }
 #endif
     }
