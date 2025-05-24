@@ -1,5 +1,5 @@
 /*
-See the LICENSE.txt file for this sample’s licensing information.
+See the LICENSE.txt file for this sample's licensing information.
 
 Abstract:
 An object that retrieves camera devices.
@@ -27,9 +27,9 @@ final class DeviceLookup {
                                                                          mediaType: .video,
                                                                          position: .unspecified)
         
-        // If the host doesn't currently define a system-preferred camera, set the preferred selection to the rear camera.
+        // If the host doesn't currently define a system-preferred camera, set the preferred selection to the front camera.
         if AVCaptureDevice.systemPreferredCamera == nil {
-            AVCaptureDevice.userPreferredCamera = backCameraDiscoverySession.devices.first
+            AVCaptureDevice.userPreferredCamera = frontCameraDiscoverySession.devices.first
         }
     }
     
