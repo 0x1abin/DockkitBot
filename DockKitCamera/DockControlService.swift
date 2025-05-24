@@ -1,5 +1,5 @@
 /*
-See the LICENSE.txt file for this sample’s licensing information.
+See the LICENSE.txt file for this sample's licensing information.
 
 Abstract:
 An object that manages DockKit accessories and their control.
@@ -470,7 +470,7 @@ actor DockControlService {
         features?.isSetROIEnabled = false
         features?.isTapToTrackEnabled = false
         features?.framingMode = .auto
-        features?.trackingMode = .system
+        features?.trackingMode = .custom
         // Cancel the subscription to the battery state.
         toggleBatterySummary(to: false)
         // Reset `trackedPersons` to clear the `trackingState` UI.
