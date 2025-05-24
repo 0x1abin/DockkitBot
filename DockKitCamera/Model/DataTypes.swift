@@ -140,7 +140,7 @@ class DockAccessoryFeatures {
     var isTapToTrackEnabled = false
     var isTrackingSummaryEnabled = false
     var isSetROIEnabled = false
-    var trackingMode: TrackingMode = .system
+    var trackingMode: TrackingMode = .robotFace
     var framingMode: FramingMode = .auto
     
     var current: EnabledDockKitFeatures {
