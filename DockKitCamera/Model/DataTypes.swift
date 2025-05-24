@@ -137,8 +137,8 @@ extension OutputService {
 @Observable
 /// An object that stores the state of a person's enabled DockKit features.
 class DockAccessoryFeatures {
-    var isTapToTrackEnabled = false
-    var isTrackingSummaryEnabled = false
+    var isTapToTrackEnabled = true  // Enable tap to track by default for robot mode
+    var isTrackingSummaryEnabled = true  // Enable tracking summary by default
     var isSetROIEnabled = false
     var trackingMode: TrackingMode = .robotFace
     var framingMode: FramingMode = .auto

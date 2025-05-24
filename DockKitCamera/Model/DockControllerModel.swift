@@ -1,5 +1,5 @@
 /*
-See the LICENSE.txt file for this sample’s licensing information.
+See the LICENSE.txt file for this sample's licensing information.
 
 Abstract:
 An object that provides the interface to the features of the connected DockKit accessory.
@@ -66,10 +66,10 @@ final class DockControllerModel: DockController {
         // Update the robot face state when entering or leaving robot face mode
         if trackingMode == .robotFace {
             robotFaceState.isTracking = true
-            // Switch to front camera for robot face mode
-            if let cameraDelegate = await dockControlService.cameraCaptureDelegate as? CameraModel {
-                await cameraDelegate.selectCamera(position: .front)
-            }
+            // Note: Camera switching will be handled in app startup
+            // Enable face detection for robot mode
+            dockAccessoryFeatures.isTapToTrackEnabled = true
+            dockAccessoryFeatures.isTrackingSummaryEnabled = true
             return true
         } else {
             robotFaceState.isTracking = false
