@@ -83,18 +83,20 @@ struct RobotFaceView: View {
     }
     
     private func eyeWidth(for geometry: GeometryProxy) -> CGFloat {
-        // 使用较小维度的固定比例，确保横竖屏一致
-        min(geometry.size.width, geometry.size.height) * 0.04  // 4%较小维度
+        // 基于7:2长宽比，宽度为基准单位的2倍
+        let baseUnit = min(geometry.size.width, geometry.size.height) * 0.03
+        return baseUnit * 2  // 长宽比7:2中的2
     }
     
     private func eyeHeight(for geometry: GeometryProxy) -> CGFloat {
-        // 使用较小维度的固定比例，确保横竖屏一致
-        min(geometry.size.width, geometry.size.height) * 0.25  // 25%较小维度
+        // 基于7:2长宽比，高度为基准单位的7倍
+        let baseUnit = min(geometry.size.width, geometry.size.height) * 0.03
+        return baseUnit * 7  // 长宽比7:2中的7
     }
     
     private func eyeSpacing(for geometry: GeometryProxy) -> CGFloat {
-        // 眼间距基于较小维度计算，确保比例一致
-        min(geometry.size.width, geometry.size.height) * 0.35  // 35%较小维度的间距
+        // 眼间距是眼睛宽度的4.4倍
+        return eyeWidth(for: geometry) * 4.4
     }
     
     // MARK: - UI组件
