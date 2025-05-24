@@ -280,6 +280,7 @@ class RobotFaceState {
     var isBlinking: Bool = false
     var mood: RobotMood = .normal
     var isTracking: Bool = false
+    var isManualMoodMode: Bool = false  // 手动表情模式标志
     
     init() {}
 }

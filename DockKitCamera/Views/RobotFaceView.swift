@@ -20,12 +20,35 @@ struct RobotFaceView: View {
     @State private var ledBrightness: Double = 1.0
     @State private var ledGlow: Double = 0.8
     
+    // 表情切换状态
+    @State private var currentMoodIndex: Int = 0
+    @State private var isManualMoodMode: Bool = false
+    @State private var showMoodLabel: Bool = false
+    
+    // 点击反馈效果
+    @State private var showTapFeedback: Bool = false
+    @State private var tapLocation: CGPoint = .zero
+    
+    // 特殊动画状态
+    @State private var specialAnimationOffset: CGFloat = 0
+    @State private var rotationAngle: Double = 0
+    @State private var scaleEffect: Double = 1.0
+    @State private var colorShift: Double = 0
+    
+    private let allMoods: [RobotMood] = RobotMood.allCases
+    
     var body: some View {
         GeometryReader { geometry in
             ZStack {
                 // 纯黑色背景
                 Color.black
                     .ignoresSafeArea(.all)
+                    .contentShape(Rectangle()) // 确保整个区域可点击
+                    .onTapGesture { location in
+                        print("🔥 点击检测到，位置: \(location)")
+                        tapLocation = location
+                        cycleThroughMoods()
+                    }
                 
                 // 机器人脸部容器 - 横屏时放大1.3倍
                 ZStack {
@@ -43,7 +66,11 @@ struct RobotFaceView: View {
                             eyeHeight: eyeHeight(for: geometry),
                             isLeftEye: true,
                             ledBrightness: ledBrightness,
-                            ledGlow: ledGlow
+                            ledGlow: ledGlow,
+                            specialAnimationOffset: specialAnimationOffset,
+                            rotationAngle: rotationAngle,
+                            scaleEffect: scaleEffect,
+                            colorShift: colorShift
                         )
                         
                         // 右眼 - 垂直LED条
@@ -55,7 +82,11 @@ struct RobotFaceView: View {
                             eyeHeight: eyeHeight(for: geometry),
                             isLeftEye: false,
                             ledBrightness: ledBrightness,
-                            ledGlow: ledGlow
+                            ledGlow: ledGlow,
+                            specialAnimationOffset: specialAnimationOffset,
+                            rotationAngle: rotationAngle,
+                            scaleEffect: scaleEffect,
+                            colorShift: colorShift
                         )
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -63,10 +94,61 @@ struct RobotFaceView: View {
                 .scaleEffect(isLandscape(geometry) ? 1.3 : 1.0)
                 .animation(.easeInOut(duration: 0.3), value: isLandscape(geometry))
                 
+                // 点击反馈效果
+                if showTapFeedback {
+                    tapFeedbackEffect
+                        .position(tapLocation)
+                }
+                
                 // 状态指示器独立显示，不受缩放影响
                 VStack {
                     Spacer()
                     modernStatusIndicator(for: geometry)
+                }
+                
+                // 表情标签（点击时显示）
+                if showMoodLabel {
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            moodLabel
+                            Spacer()
+                        }
+                        Spacer()
+                        Spacer()
+                    }
+                }
+                
+                // 点击提示（仅在第一次显示）
+                if !isManualMoodMode && robotFaceState.mood == .normal {
+                    VStack {
+                        HStack {
+                            Spacer()
+                            tapHintLabel
+                        }
+                        .padding(.top, 50)
+                        .padding(.trailing, 30)
+                        Spacer()
+                    }
+                }
+                
+                // 调试信息显示
+                if isManualMoodMode {
+                    VStack {
+                        HStack {
+                            Text("手动模式: \(currentMoodIndex)/\(allMoods.count)")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.7))
+                                .padding(8)
+                                .background(Color.black.opacity(0.5))
+                                .cornerRadius(8)
+                            Spacer()
+                        }
+                        .padding(.top, 100)
+                        .padding(.leading, 20)
+                        Spacer()
+                    }
                 }
             }
         }
@@ -74,7 +156,14 @@ struct RobotFaceView: View {
         .statusBarHidden(true)
         .persistentSystemOverlays(.hidden)
         .onAppear {
+            print("🎯 RobotFaceView 出现，当前表情: \(robotFaceState.mood)")
             startLEDAnimations()
+            startMoodAnimations()
+        }
+        .onChange(of: robotFaceState.mood) { oldValue, newValue in
+            print("🎭 表情变化: \(oldValue) -> \(newValue)")
+            // 当表情改变时，触发相应的动画
+            triggerMoodAnimation(for: newValue)
         }
     }
     
@@ -238,6 +327,481 @@ struct RobotFaceView: View {
             }
         }
     }
+    
+    // MARK: - 新增UI组件
+    
+    @ViewBuilder
+    private var moodLabel: some View {
+        Text(moodDisplayName(robotFaceState.mood))
+            .font(.system(size: 26, weight: .bold, design: .rounded))
+            .foregroundColor(.white)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 14)
+            .background(
+                Capsule()
+                    .fill(Color.black.opacity(0.85))
+                    .overlay(
+                        Capsule()
+                            .stroke(moodColor(robotFaceState.mood), lineWidth: 3)
+                            .shadow(color: moodColor(robotFaceState.mood), radius: 8)
+                    )
+            )
+            .shadow(color: moodColor(robotFaceState.mood).opacity(0.6), radius: 15)
+            .scaleEffect(showMoodLabel ? 1.0 : 0.3)
+            .opacity(showMoodLabel ? 1.0 : 0.0)
+            .rotationEffect(.degrees(showMoodLabel ? 0 : 180))
+            .animation(.spring(response: 0.4, dampingFraction: 0.6), value: showMoodLabel)
+    }
+    
+    @ViewBuilder
+    private var tapHintLabel: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "hand.tap")
+                .font(.system(size: 14))
+            Text("点击屏幕切换表情")
+                .font(.system(size: 12, weight: .medium))
+        }
+        .foregroundColor(.white.opacity(0.6))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(
+            Capsule()
+                .fill(Color.black.opacity(0.5))
+        )
+        .opacity(isManualMoodMode ? 0.0 : 1.0)
+        .scaleEffect(isManualMoodMode ? 0.5 : 1.0)
+        .animation(.easeInOut(duration: 0.5), value: isManualMoodMode)
+    }
+    
+    @ViewBuilder
+    private var tapFeedbackEffect: some View {
+        ZStack {
+            // 外圈扩散效果
+            Circle()
+                .stroke(moodColor(robotFaceState.mood), lineWidth: 3)
+                .frame(width: 60, height: 60)
+                .scaleEffect(showTapFeedback ? 2.0 : 0.5)
+                .opacity(showTapFeedback ? 0.0 : 0.8)
+            
+            // 内圈填充效果
+            Circle()
+                .fill(moodColor(robotFaceState.mood).opacity(0.3))
+                .frame(width: 30, height: 30)
+                .scaleEffect(showTapFeedback ? 1.5 : 0.8)
+                .opacity(showTapFeedback ? 0.0 : 0.6)
+        }
+        .animation(.easeOut(duration: 0.4), value: showTapFeedback)
+    }
+    
+    // MARK: - 表情切换逻辑
+    
+    private func cycleThroughMoods() {
+        print("🎯 开始切换表情，当前索引: \(currentMoodIndex)，当前表情: \(robotFaceState.mood)")
+        
+        // 立即响应点击
+        isManualMoodMode = true
+        robotFaceState.isManualMoodMode = true  // 同步到共享状态
+        
+        // 触发点击反馈效果
+        showTapFeedback = true
+        
+        // 先触发点击反馈动画
+        withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
+            scaleEffect = 0.95  // 轻微缩小表示点击
+        }
+        
+        // 0.4秒后隐藏点击反馈效果
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            showTapFeedback = false
+        }
+        
+        // 延迟一点再切换表情，营造按压感
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            let previousIndex = currentMoodIndex
+            currentMoodIndex = (currentMoodIndex + 1) % allMoods.count
+            let newMood = allMoods[currentMoodIndex]
+            
+            print("🔄 切换表情: 索引 \(previousIndex) -> \(currentMoodIndex)，表情 \(robotFaceState.mood) -> \(newMood)")
+            
+            // 快速切换到新表情
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                robotFaceState.mood = newMood
+                scaleEffect = 1.0  // 恢复原大小
+            }
+            
+            // 立即显示表情标签，使用更动感的动画
+            showMoodLabel = true
+            
+            // 添加轻微的屏幕震动效果（通过快速缩放）
+            withAnimation(.spring(response: 0.15, dampingFraction: 0.4)) {
+                scaleEffect = 1.05
+            }
+            
+            // 立即恢复正常大小
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    scaleEffect = 1.0
+                }
+            }
+        }
+        
+        // 1.5秒后隐藏表情标签（缩短显示时间）
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            withAnimation(.easeOut(duration: 0.25)) {
+                showMoodLabel = false
+            }
+        }
+    }
+    
+    private func moodDisplayName(_ mood: RobotMood) -> String {
+        switch mood {
+        case .normal: return "😐 正常"
+        case .happy: return "😊 开心"
+        case .sad: return "😢 悲伤"
+        case .excited: return "🤩 兴奋"
+        case .sleepy: return "😴 困倦"
+        case .anger: return "😡 愤怒"
+        case .disgust: return "🤢 厌恶"
+        case .fear: return "😰 恐惧"
+        case .surprise: return "😲 惊讶"
+        case .trust: return "😌 信任"
+        case .anticipation: return "😃 期待"
+        case .joy: return "😆 欢喜"
+        case .sadness: return "😞 忧伤"
+        case .curiosity: return "🤔 好奇"
+        case .acceptance: return "😇 接纳"
+        case .contempt: return "😤 蔑视"
+        case .pride: return "😏 骄傲"
+        case .shame: return "😳 羞耻"
+        case .love: return "😍 爱恋"
+        case .guilt: return "😔 内疚"
+        case .envy: return "😒 嫉妒"
+        }
+    }
+    
+    private func moodColor(_ mood: RobotMood) -> Color {
+        switch mood {
+        case .normal: return Color.blue
+        case .happy, .joy: return Color.yellow
+        case .sad, .sadness: return Color.blue.opacity(0.7)
+        case .excited, .anticipation: return Color.orange
+        case .sleepy: return Color.purple.opacity(0.6)
+        case .anger: return Color.red
+        case .disgust: return Color.green.opacity(0.7)
+        case .fear: return Color.gray
+        case .surprise: return Color.cyan
+        case .trust, .acceptance: return Color.green
+        case .curiosity: return Color.yellow.opacity(0.8)
+        case .contempt: return Color.red.opacity(0.7)
+        case .pride: return Color.orange.opacity(0.8)
+        case .shame, .guilt: return Color.purple.opacity(0.7)
+        case .love: return Color.pink
+        case .envy: return Color.green.opacity(0.6)
+        }
+    }
+    
+    // MARK: - 表情动画系统
+    
+    private func startMoodAnimations() {
+        // 启动持续的表情相关动画
+        Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+            updateMoodAnimations()
+        }
+        
+        // 启动高级动画定时器
+        Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
+            updateAdvancedAnimations()
+        }
+    }
+    
+    private func updateMoodAnimations() {
+        switch robotFaceState.mood {
+        case .excited, .anticipation:
+            // 兴奋状态：快速闪烁
+            withAnimation(.easeInOut(duration: 0.3)) {
+                ledBrightness = ledBrightness > 1.0 ? 0.8 : 1.3
+            }
+            
+        case .sleepy:
+            // 困倦状态：缓慢呼吸
+            withAnimation(.easeInOut(duration: 3.0)) {
+                ledBrightness = ledBrightness > 1.0 ? 0.5 : 1.0
+            }
+            
+        case .anger:
+            // 愤怒状态：红色闪烁
+            withAnimation(.easeInOut(duration: 0.5)) {
+                colorShift = colorShift > 0.5 ? 0.0 : 1.0
+            }
+            
+        case .fear:
+            // 恐惧状态：颤抖效果
+            withAnimation(.easeInOut(duration: 0.2)) {
+                specialAnimationOffset = specialAnimationOffset > 0 ? -2 : 2
+            }
+            
+        case .surprise:
+            // 惊讶状态：放大效果
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.5)) {
+                scaleEffect = scaleEffect > 1.0 ? 1.0 : 1.2
+            }
+            
+        case .joy:
+            // 欢喜状态：旋转效果
+            withAnimation(.linear(duration: 2.0)) {
+                rotationAngle += 5
+            }
+            
+        case .love:
+            // 爱恋状态：心跳效果
+            withAnimation(.easeInOut(duration: 0.8)) {
+                scaleEffect = scaleEffect > 1.0 ? 1.0 : 1.15
+                ledBrightness = ledBrightness > 1.0 ? 0.9 : 1.2
+            }
+            
+        case .curiosity:
+            // 好奇状态：微妙摆动
+            withAnimation(.easeInOut(duration: 1.5)) {
+                specialAnimationOffset = specialAnimationOffset > 0 ? 0 : 1
+            }
+            
+        case .disgust:
+            // 厌恶状态：不规则颤抖
+            withAnimation(.easeInOut(duration: 0.3)) {
+                specialAnimationOffset = Double.random(in: -1...1)
+            }
+            
+        case .envy:
+            // 嫉妒状态：绿色波动
+            withAnimation(.easeInOut(duration: 1.2)) {
+                colorShift = colorShift > 0.5 ? 0.2 : 0.8
+                ledBrightness = ledBrightness > 1.0 ? 0.8 : 1.1
+            }
+            
+        case .pride:
+            // 骄傲状态：橙色光芒
+            withAnimation(.easeInOut(duration: 2.0)) {
+                ledGlow = ledGlow > 0.8 ? 0.6 : 1.2
+                scaleEffect = scaleEffect > 1.0 ? 1.0 : 1.05
+            }
+            
+        case .shame, .guilt:
+            // 羞耻/内疚状态：微弱闪烁
+            withAnimation(.easeInOut(duration: 2.5)) {
+                ledBrightness = ledBrightness > 0.7 ? 0.4 : 0.7
+            }
+            
+        default:
+            // 恢复默认状态
+            withAnimation(.easeInOut(duration: 1.0)) {
+                specialAnimationOffset = 0
+                rotationAngle = 0
+                scaleEffect = 1.0
+                colorShift = 0
+            }
+        }
+    }
+    
+    private func updateAdvancedAnimations() {
+        // 高频率的精细动画更新
+        switch robotFaceState.mood {
+        case .trust:
+            // 信任状态：温和的波动
+            let time = Date().timeIntervalSince1970
+            withAnimation(.linear(duration: 0.1)) {
+                ledBrightness = 1.0 + sin(time * 2) * 0.1
+            }
+            
+        case .acceptance:
+            // 接纳状态：柔和的呼吸
+            let time = Date().timeIntervalSince1970
+            withAnimation(.linear(duration: 0.1)) {
+                scaleEffect = 1.0 + sin(time * 1.5) * 0.05
+                ledGlow = 0.8 + sin(time * 1.2) * 0.2
+            }
+            
+        case .contempt:
+            // 蔑视状态：缓慢的不屑摆动
+            let time = Date().timeIntervalSince1970
+            withAnimation(.linear(duration: 0.1)) {
+                specialAnimationOffset = sin(time * 0.8) * 1.5
+            }
+            
+        default:
+            break
+        }
+    }
+    
+    private func triggerMoodAnimation(for mood: RobotMood) {
+        switch mood {
+        case .surprise:
+            // 惊讶时的爆发式放大
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                scaleEffect = 1.5
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                    scaleEffect = 1.0
+                }
+            }
+            
+        case .fear:
+            // 恐惧时的快速颤抖
+            for i in 0..<5 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.1) {
+                    withAnimation(.easeInOut(duration: 0.05)) {
+                        specialAnimationOffset = (i % 2 == 0) ? 3 : -3
+                    }
+                }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    specialAnimationOffset = 0
+                }
+            }
+            
+        case .joy:
+            // 欢喜时的旋转庆祝
+            withAnimation(.linear(duration: 1.0)) {
+                rotationAngle += 360
+            }
+            
+        case .anger:
+            // 愤怒时的红色闪烁
+            for i in 0..<3 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.3) {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        colorShift = 1.0
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            colorShift = 0.0
+                        }
+                    }
+                }
+            }
+            
+        case .love:
+            // 爱恋时的心跳动画
+            for i in 0..<3 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.6) {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                        scaleEffect = 1.3
+                        colorShift = 1.0
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                            scaleEffect = 1.0
+                            colorShift = 0.0
+                        }
+                    }
+                }
+            }
+            
+        case .excited:
+            // 兴奋时的快速彩虹效果
+            for i in 0..<8 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.1) {
+                    withAnimation(.easeInOut(duration: 0.1)) {
+                        colorShift = Double(i) / 7.0
+                    }
+                }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    colorShift = 0.0
+                }
+            }
+            
+        case .sleepy:
+            // 困倦时的缓慢眨眼
+            for i in 0..<3 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 1.5) {
+                    withAnimation(.easeInOut(duration: 0.8)) {
+                        ledBrightness = 0.3
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                        withAnimation(.easeInOut(duration: 0.8)) {
+                            ledBrightness = 1.0
+                        }
+                    }
+                }
+            }
+            
+        case .curiosity:
+            // 好奇时的探索动画
+            for i in 0..<4 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.3) {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        specialAnimationOffset = (i % 2 == 0) ? 2 : -2
+                        scaleEffect = 1.1
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                            specialAnimationOffset = 0
+                            scaleEffect = 1.0
+                        }
+                    }
+                }
+            }
+            
+        case .disgust:
+            // 厌恶时的后退动画
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                scaleEffect = 0.8
+                specialAnimationOffset = -3
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                    scaleEffect = 1.0
+                    specialAnimationOffset = 0
+                }
+            }
+            
+        case .pride:
+            // 骄傲时的挺立动画
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
+                scaleEffect = 1.2
+                rotationAngle = 10
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                    scaleEffect = 1.0
+                    rotationAngle = 0
+                }
+            }
+            
+        case .shame:
+            // 羞耻时的缩小隐藏
+            withAnimation(.easeInOut(duration: 0.5)) {
+                scaleEffect = 0.7
+                ledBrightness = 0.4
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                withAnimation(.easeInOut(duration: 0.8)) {
+                    scaleEffect = 1.0
+                    ledBrightness = 1.0
+                }
+            }
+            
+        case .guilt:
+            // 内疚时的低头效果
+            withAnimation(.easeInOut(duration: 0.6)) {
+                specialAnimationOffset = 0
+                scaleEffect = 0.9
+                ledBrightness = 0.6
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                withAnimation(.easeInOut(duration: 0.8)) {
+                    scaleEffect = 1.0
+                    ledBrightness = 1.0
+                }
+            }
+            
+        default:
+            break
+        }
+    }
 }
 
 /// 垂直LED条眼睛视图（根据设计图）
@@ -251,6 +815,12 @@ struct VerticalLEDEyeView: View {
     let ledBrightness: Double
     let ledGlow: Double
     
+    // 特殊动画状态
+    let specialAnimationOffset: CGFloat
+    let rotationAngle: Double
+    let scaleEffect: Double
+    let colorShift: Double
+    
     // 眼球预测跟随状态
     @State private var previousPosition: CGPoint = CGPoint(x: 0.5, y: 0.5)
     @State private var predictedPosition: CGPoint = CGPoint(x: 0.5, y: 0.5)
@@ -258,7 +828,7 @@ struct VerticalLEDEyeView: View {
     
     var body: some View {
         ZStack {
-            if !isBlinking {
+            if !isBlinking || shouldShowSpecialEye {
                 // 根据设计图的垂直LED条
                 verticalLEDStrip
             } else {
@@ -266,10 +836,25 @@ struct VerticalLEDEyeView: View {
                 blinkingStrip
             }
         }
+        .rotationEffect(.degrees(rotationAngle * (isLeftEye ? 1 : -1)))
+        .scaleEffect(scaleEffect)
+        .offset(x: specialAnimationOffset * (isLeftEye ? 1 : -1), y: 0)
         .animation(.easeInOut(duration: 0.15), value: isBlinking)
-        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: predictedPosition) // 使用预测位置进行动画
+        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: predictedPosition)
         .onChange(of: eyePosition) { oldValue, newValue in
             updatePredictedPosition(newPosition: newValue)
+        }
+    }
+    
+    // MARK: - 特殊表情判断
+    
+    private var shouldShowSpecialEye: Bool {
+        // 某些表情即使在眨眼时也要显示特殊效果
+        switch mood {
+        case .anger, .fear, .surprise, .joy:
+            return true
+        default:
+            return false
         }
     }
     
@@ -279,12 +864,12 @@ struct VerticalLEDEyeView: View {
     private var verticalLEDStrip: some View {
         ZStack {
             // 外发光效果 (模糊70, 透明度55%)
-            RoundedRectangle(cornerRadius: 4) // 4PX圆角
+            RoundedRectangle(cornerRadius: moodCornerRadius)
                 .fill(
                     RadialGradient(
                         colors: [
-                            designBlueColor.opacity(0.55 * ledGlow), // 55%透明度
-                            designBlueColor.opacity(0.3 * ledGlow),
+                            moodLEDColor.opacity(0.55 * ledGlow), // 55%透明度
+                            moodLEDColor.opacity(0.3 * ledGlow),
                             Color.clear
                         ],
                         center: .center,
@@ -292,46 +877,204 @@ struct VerticalLEDEyeView: View {
                         endRadius: eyeWidth * 3.5
                     )
                 )
-                .frame(width: eyeWidth * 2.5, height: eyeHeight * 1.3)
+                .frame(width: eyeWidth * glowScale, height: eyeHeight * glowScale)
                 .blur(radius: 70 * ledGlow / 10) // 模糊70效果
                 .offset(eyeTrackingOffset) // 发光效果也跟随移动
             
-            // 主LED条 - 垂直蓝色渐变（带眼球跟随效果）
-            RoundedRectangle(cornerRadius: 4) // 4PX圆角
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.2, green: 0.8, blue: 1.0), // #33CBFE
-                            Color(red: 0.23, green: 0.76, blue: 1.0), // #3BC1FE  
-                            Color(red: 0.26, green: 0.55, blue: 0.99) // #438DFD
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .frame(width: eyeWidth, height: eyeHeight)
-                .shadow(color: designBlueColor.opacity(0.8), radius: 8, x: 0, y: 0)
+            // 主LED条 - 垂直渐变（带眼球跟随效果）
+            RoundedRectangle(cornerRadius: moodCornerRadius)
+                .fill(moodGradient)
+                .frame(width: eyeWidth * moodWidthScale, height: eyeHeight * moodHeightScale)
+                .shadow(color: moodLEDColor.opacity(0.8), radius: 8, x: 0, y: 0)
                 .scaleEffect(ledBrightness)
                 .offset(eyeTrackingOffset) // LED条跟随眼球位置移动
+                .overlay(
+                    // 特殊表情的额外效果
+                    moodSpecialOverlay
+                )
         }
     }
     
     @ViewBuilder
     private var blinkingStrip: some View {
-        // LED条眨眼 - 极细的水平线条
+        // LED条眨眼 - 根据表情调整
         RoundedRectangle(cornerRadius: 1)
             .fill(
                 LinearGradient(
                     colors: [
-                        designBlueColor.opacity(0.8),
-                        designBlueColor.opacity(0.4)
+                        moodLEDColor.opacity(0.8),
+                        moodLEDColor.opacity(0.4)
                     ],
                     startPoint: .leading,
                     endPoint: .trailing
                 )
             )
-            .frame(width: eyeWidth, height: 2)
-            .shadow(color: designBlueColor.opacity(0.4), radius: 2, x: 0, y: 0)
+            .frame(width: eyeWidth, height: blinkHeight)
+            .shadow(color: moodLEDColor.opacity(0.4), radius: 2, x: 0, y: 0)
+    }
+    
+    // MARK: - 表情相关样式
+    
+    private var moodLEDColor: Color {
+        let baseColor = designBlueColor
+        
+        switch mood {
+        case .anger:
+            return Color.lerp(baseColor, Color.red, factor: colorShift)
+        case .fear:
+            return Color.lerp(baseColor, Color.gray, factor: 0.7)
+        case .disgust:
+            return Color.lerp(baseColor, Color.green, factor: 0.6)
+        case .love:
+            return Color.lerp(baseColor, Color.pink, factor: 0.8)
+        case .envy:
+            return Color.lerp(baseColor, Color.green, factor: 0.5)
+        case .joy, .happy:
+            return Color.lerp(baseColor, Color.yellow, factor: 0.4)
+        case .sadness, .sad, .guilt:
+            return Color.lerp(baseColor, Color.purple, factor: 0.3)
+        case .sleepy:
+            return Color.lerp(baseColor, Color.purple, factor: 0.5)
+        case .surprise:
+            return Color.lerp(baseColor, Color.cyan, factor: 0.6)
+        case .pride:
+            return Color.lerp(baseColor, Color.orange, factor: 0.5)
+        default:
+            return baseColor
+        }
+    }
+    
+    private var moodGradient: LinearGradient {
+        let color = moodLEDColor
+        
+        switch mood {
+        case .anger:
+            return LinearGradient(
+                colors: [
+                    color,
+                    Color.red.opacity(0.8),
+                    color
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        case .love:
+            return LinearGradient(
+                colors: [
+                    color,
+                    Color.pink.opacity(0.6),
+                    Color.red.opacity(0.4),
+                    color
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        case .joy, .happy:
+            return LinearGradient(
+                colors: [
+                    Color.yellow.opacity(0.8),
+                    color,
+                    Color.yellow.opacity(0.8)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        default:
+            return LinearGradient(
+                colors: [
+                    color,
+                    color.opacity(0.8),
+                    color.opacity(0.6)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        }
+    }
+    
+    @ViewBuilder
+    private var moodSpecialOverlay: some View {
+        switch mood {
+        case .surprise:
+            // 惊讶：中心爆炸效果
+            Circle()
+                .fill(Color.white.opacity(0.8))
+                .frame(width: 4, height: 4)
+                .scaleEffect(ledBrightness * 1.5)
+                .blur(radius: 2)
+                
+        case .love:
+            // 爱心：心形光点
+            Image(systemName: "heart.fill")
+                .font(.system(size: 8))
+                .foregroundColor(.white.opacity(0.7))
+                .scaleEffect(ledBrightness)
+                
+        case .anger:
+            // 愤怒：锯齿边缘
+            Rectangle()
+                .fill(Color.red.opacity(0.5))
+                .frame(width: eyeWidth * 0.1, height: eyeHeight)
+                .opacity(colorShift)
+                
+        case .curiosity:
+            // 好奇：问号
+            Text("?")
+                .font(.system(size: 6, weight: .bold))
+                .foregroundColor(.white.opacity(0.6))
+                .scaleEffect(ledBrightness)
+                
+        default:
+            EmptyView()
+        }
+    }
+    
+    // MARK: - 表情相关尺寸调整
+    
+    private var moodWidthScale: CGFloat {
+        switch mood {
+        case .surprise: return 1.2
+        case .fear: return 0.8
+        case .sleepy: return 0.6
+        case .anger: return 1.1
+        default: return 1.0
+        }
+    }
+    
+    private var moodHeightScale: CGFloat {
+        switch mood {
+        case .surprise: return 1.3
+        case .fear: return 0.9
+        case .sleepy: return 0.7
+        case .excited, .joy: return 1.2
+        default: return 1.0
+        }
+    }
+    
+    private var moodCornerRadius: CGFloat {
+        switch mood {
+        case .anger: return 2  // 更尖锐
+        case .love: return 8   // 更圆润
+        case .sleepy: return 6 // 更柔和
+        default: return 4
+        }
+    }
+    
+    private var glowScale: CGFloat {
+        switch mood {
+        case .surprise, .joy: return 3.0
+        case .fear: return 2.0
+        case .sleepy: return 1.5
+        default: return 2.5
+        }
+    }
+    
+    private var blinkHeight: CGFloat {
+        switch mood {
+        case .sleepy: return 1   // 非常细
+        case .anger: return 4    // 稍粗
+        default: return 2
+        }
     }
     
     // MARK: - 计算属性
@@ -342,9 +1085,22 @@ struct VerticalLEDEyeView: View {
     }
     
     private var eyeTrackingOffset: CGSize {
-        CGSize(
+        let baseOffset = CGSize(
             width: (predictedPosition.x - 0.5) * eyeWidth * 2.0, // 添加水平跟踪，使用2倍放大让移动更明显
             height: (predictedPosition.y - 0.5) * eyeHeight * 0.4 // 使用预测位置进行垂直跟踪
+        )
+        
+        // 根据表情调整跟踪敏感度
+        let sensitivity: CGFloat
+        switch mood {
+        case .surprise, .fear: sensitivity = 1.5
+        case .sleepy: sensitivity = 0.5
+        default: sensitivity = 1.0
+        }
+        
+        return CGSize(
+            width: baseOffset.width * sensitivity,
+            height: baseOffset.height * sensitivity
         )
     }
     
@@ -381,6 +1137,35 @@ struct VerticalLEDEyeView: View {
         }
         
         previousPosition = newPosition
+    }
+}
+
+// MARK: - Color Extension for lerp function
+
+extension Color {
+    static func lerp(_ color1: Color, _ color2: Color, factor: Double) -> Color {
+        let factor = max(0, min(1, factor))
+        
+        #if canImport(UIKit)
+        let uiColor1 = UIColor(color1)
+        let uiColor2 = UIColor(color2)
+        
+        var r1: CGFloat = 0, g1: CGFloat = 0, b1: CGFloat = 0, a1: CGFloat = 0
+        var r2: CGFloat = 0, g2: CGFloat = 0, b2: CGFloat = 0, a2: CGFloat = 0
+        
+        uiColor1.getRed(&r1, green: &g1, blue: &b1, alpha: &a1)
+        uiColor2.getRed(&r2, green: &g2, blue: &b2, alpha: &a2)
+        
+        let r = r1 + (r2 - r1) * factor
+        let g = g1 + (g2 - g1) * factor
+        let b = b1 + (b2 - b1) * factor
+        let a = a1 + (a2 - a1) * factor
+        
+        return Color(red: r, green: g, blue: b, opacity: a)
+        #else
+        // 简化版本，适用于macOS等平台
+        return factor < 0.5 ? color1 : color2
+        #endif
     }
 }
 

@@ -214,19 +214,27 @@ final class DockControllerModel: DockController {
                 robotFaceState.rightEyePosition = CGPoint(x: constrainedX, y: constrainedY)
             }
             
-            // Update mood based on tracking confidence
-            if let looking = primaryPerson.looking {
-                if looking > 0.8 {
-                    robotFaceState.mood = .happy
-                } else if looking > 0.5 {
-                    robotFaceState.mood = .normal
-                } else {
-                    robotFaceState.mood = .sad
+            // 仅在非手动模式下才自动更改表情
+            if !robotFaceState.isManualMoodMode {
+                // Update mood based on tracking confidence
+                if let looking = primaryPerson.looking {
+                    if looking > 0.8 {
+                        robotFaceState.mood = .happy
+                    } else if looking > 0.5 {
+                        robotFaceState.mood = .normal
+                    } else {
+                        robotFaceState.mood = .sad
+                    }
                 }
             }
         } else {
             robotFaceState.isTracking = false
-            robotFaceState.mood = .sleepy
+            
+            // 仅在非手动模式下才自动设置为困倦表情
+            if !robotFaceState.isManualMoodMode {
+                robotFaceState.mood = .sleepy
+            }
+            
             // Return eyes to center when no face is detected
             withAnimation(.easeOut(duration: 0.3)) {
                 robotFaceState.leftEyePosition = CGPoint(x: 0.5, y: 0.5)
