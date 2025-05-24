@@ -27,12 +27,12 @@ struct RobotFaceView: View {
                 Color.black
                     .ignoresSafeArea(.all)
                 
-                // 机器人脸部外壳轮廓（白色圆润外形）
-                modernRobotShell(for: geometry)
-                
-                // 垂直LED条眼部设计
+                // 机器人脸部容器 - 横屏时放大1.3倍
                 ZStack {
-                    // 眼部区域居中显示
+                    // 机器人脸部外壳轮廓（白色圆润外形）
+                    modernRobotShell(for: geometry)
+                    
+                    // 垂直LED条眼部设计
                     HStack(spacing: eyeSpacing(for: geometry)) {
                         // 左眼 - 垂直LED条
                         VerticalLEDEyeView(
@@ -59,12 +59,14 @@ struct RobotFaceView: View {
                         )
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    
-                    // 状态指示器固定在底部
-                    VStack {
-                        Spacer()
-                        modernStatusIndicator(for: geometry)
-                    }
+                }
+                .scaleEffect(isLandscape(geometry) ? 1.3 : 1.0)
+                .animation(.easeInOut(duration: 0.3), value: isLandscape(geometry))
+                
+                // 状态指示器独立显示，不受缩放影响
+                VStack {
+                    Spacer()
+                    modernStatusIndicator(for: geometry)
                 }
             }
         }
@@ -80,6 +82,12 @@ struct RobotFaceView: View {
     
     private func faceHeight(for geometry: GeometryProxy) -> CGFloat {
         min(geometry.size.width, geometry.size.height) * 0.8
+    }
+    
+    // MARK: - 屏幕方向判断
+    
+    private func isLandscape(_ geometry: GeometryProxy) -> Bool {
+        geometry.size.width > geometry.size.height
     }
     
     private func eyeWidth(for geometry: GeometryProxy) -> CGFloat {
@@ -143,8 +151,8 @@ struct RobotFaceView: View {
             Spacer()
             statusContent(for: geometry)
         }
-        .padding(.bottom, 40)
-        .padding(.trailing, 30)
+        .padding(.bottom, isLandscape(geometry) ? 60 : 40)
+        .padding(.trailing, isLandscape(geometry) ? 45 : 30)
     }
     
     @ViewBuilder
