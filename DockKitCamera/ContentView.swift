@@ -72,7 +72,7 @@ struct ContentView<CameraModel: Camera, DockControllerModel: DockController>: Vi
         ZStack {
             // Show robot face when in robot face mode, otherwise show camera preview
             if dockController.isRobotFaceMode {
-                RobotFaceView(robotFaceState: dockController.robotFaceState)
+                RobotFaceView(robotFaceState: dockController.robotFaceState, dockController: dockController)
             } else {
                 // A container view that manages the placement of the preview.
                 PreviewContainer(camera: camera) {
