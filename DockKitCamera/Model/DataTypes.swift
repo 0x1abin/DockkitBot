@@ -251,7 +251,6 @@ enum TrackingMode: String, CaseIterable, Identifiable {
     case system = "System Tracking"
     case custom = "Custom Tracking"
     case manual = "Manual Control"
-    case robotFace = "Robot Face Mode"
     public var id: Self { self }
 }
 

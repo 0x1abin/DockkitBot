@@ -71,7 +71,7 @@ struct ContentView<CameraModel: Camera, DockControllerModel: DockController>: Vi
     var body: some View {
         ZStack {
             // Show robot face when in robot face mode, otherwise show camera preview
-            if dockController.dockAccessoryFeatures.trackingMode == .robotFace {
+            if dockController.isRobotFaceMode {
                 RobotFaceView(robotFaceState: dockController.robotFaceState)
             } else {
                 // A container view that manages the placement of the preview.
@@ -158,13 +158,13 @@ struct ContentView<CameraModel: Camera, DockControllerModel: DockController>: Vi
             }
             
             // The main camera user interface (only show when not in robot face mode).
-            if dockController.dockAccessoryFeatures.trackingMode != .robotFace {
+            if !dockController.isRobotFaceMode {
                 CameraUI(camera: camera, dockController: dockController)
             }
         }
-        .statusBarHidden(dockController.dockAccessoryFeatures.trackingMode == .robotFace)
-        .persistentSystemOverlays(dockController.dockAccessoryFeatures.trackingMode == .robotFace ? .hidden : .automatic)
-        .animation(.easeInOut(duration: 0.3), value: dockController.dockAccessoryFeatures.trackingMode)
+        .statusBarHidden(dockController.isRobotFaceMode)
+        .persistentSystemOverlays(dockController.isRobotFaceMode ? .hidden : .automatic)
+        .animation(.easeInOut(duration: 0.3), value: dockController.isRobotFaceMode)
     }
     
     /// Convert the chevron type to a type corrected for the current camera orientation.

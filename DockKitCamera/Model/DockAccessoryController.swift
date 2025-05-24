@@ -1,5 +1,5 @@
 /*
-See the LICENSE.txt file for this sample’s licensing information.
+See the LICENSE.txt file for this sample's licensing information.
 
 Abstract:
 A protocol that represents the model to display DockKit-related views.
@@ -32,6 +32,9 @@ protocol DockController: AnyObject {
     /// The robot face state for robot face mode.
     var robotFaceState: RobotFaceState { get }
     
+    /// Flag to indicate if the app is in robot face mode.
+    var isRobotFaceMode: Bool { get }
+    
     /// Starts the DockKit pipeline.
     func start() async
     
@@ -40,6 +43,9 @@ protocol DockController: AnyObject {
     
     /// Change the DockKit tracking to system, custom, or manual.
     func updateTrackingMode(to trackingMode: TrackingMode) async -> Bool
+    
+    /// Toggle robot face mode on/off.
+    func toggleRobotFaceMode() async
     
     /// Select the subject closest to a specific point in the camera preview.
     func selectSubject(at point: CGPoint?, override: Bool) async -> Bool

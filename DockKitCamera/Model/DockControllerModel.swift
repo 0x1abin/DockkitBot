@@ -1,5 +1,5 @@
 /*
-See the LICENSE.txt file for this sample’s licensing information.
+See the LICENSE.txt file for this sample's licensing information.
 
 Abstract:
 An object that provides the interface to the features of the connected DockKit accessory.
@@ -41,6 +41,9 @@ final class DockControllerModel: DockController {
     /// The robot face state for robot face mode.
     private(set) var robotFaceState = RobotFaceState()
     
+    /// Flag to indicate if the app is in robot face mode.
+    private(set) var isRobotFaceMode = false
+    
     /// An object that manages the app's DockKit functionality.
     private let dockControlService = DockControlService()
     
@@ -63,19 +66,26 @@ final class DockControllerModel: DockController {
     }
     
     func updateTrackingMode(to trackingMode: TrackingMode) async -> Bool {
-        // Update the robot face state when entering or leaving robot face mode
-        if trackingMode == .robotFace {
+        return await dockControlService.updateTrackingMode(to: trackingMode)
+    }
+    
+    /// Toggle robot face mode on/off.
+    func toggleRobotFaceMode() async {
+        isRobotFaceMode.toggle()
+        
+        if isRobotFaceMode {
             robotFaceState.isTracking = true
             // Switch to front camera for robot face mode
             if let cameraDelegate = await dockControlService.cameraCaptureDelegate as? CameraModel {
                 await cameraDelegate.selectCamera(position: .front)
             }
-            return true
         } else {
             robotFaceState.isTracking = false
+            robotFaceState.mood = .normal
+            // Return eyes to center when exiting robot face mode
+            robotFaceState.leftEyePosition = CGPoint(x: 0.5, y: 0.5)
+            robotFaceState.rightEyePosition = CGPoint(x: 0.5, y: 0.5)
         }
-        
-        return await dockControlService.updateTrackingMode(to: trackingMode)
     }
     
     func selectSubject(at point: CGPoint?, override: Bool = false) async -> Bool {
@@ -170,7 +180,7 @@ final class DockControllerModel: DockController {
                 trackedPersons = trackedPersonsUpdate
                 
                 // Update robot face eye positions when in robot face mode
-                if dockAccessoryFeatures.trackingMode == .robotFace {
+                if isRobotFaceMode {
                     updateRobotEyePositions(with: trackedPersonsUpdate)
                 }
             }
@@ -230,7 +240,7 @@ extension DockControllerModel: DockAccessoryTrackingDelegate {
     func track(metadata: [AVMetadataObject], sampleBuffer: CMSampleBuffer?,
                deviceType: AVCaptureDevice.DeviceType, devicePosition: AVCaptureDevice.Position) {
         // Handle robot face mode - directly process face detection for eye tracking
-        if dockAccessoryFeatures.trackingMode == .robotFace {
+        if isRobotFaceMode {
             processFaceDetectionForRobotMode(metadata: metadata)
             return
         }

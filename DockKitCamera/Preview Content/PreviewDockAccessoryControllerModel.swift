@@ -1,5 +1,5 @@
 /*
-See the LICENSE.txt file for this sample’s licensing information.
+See the LICENSE.txt file for this sample's licensing information.
 
 Abstract:
 A dock accessory controller implementation to use when working with SwiftUI previews.
@@ -21,6 +21,8 @@ class PreviewDockControllerModel: DockController {
     
     var robotFaceState: RobotFaceState = RobotFaceState()
     
+    var isRobotFaceMode: Bool = false
+    
     var trackedPersons: [DockAccessoryTrackedPerson] = []
     
     init() {
@@ -39,6 +41,11 @@ class PreviewDockControllerModel: DockController {
     func updateTrackingMode(to trackingMode: TrackingMode) async -> Bool {
         logger.debug("updateTrackingMode isn't implemented in PreviewDockAccessory.")
         return false
+    }
+    
+    func toggleRobotFaceMode() async {
+        logger.debug("toggleRobotFaceMode isn't implemented in PreviewDockAccessory.")
+        isRobotFaceMode.toggle()
     }
     
     func selectSubject(at point: CGPoint?, override: Bool = false) async -> Bool {
