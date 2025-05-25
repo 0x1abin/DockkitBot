@@ -1,20 +1,55 @@
-# Controlling a DockKit accessory using your camera app
-Follow subjects in real time using an iPhone that you mount on a DockKit accessory.
+# Robot Face Tracking App
+
+An immersive robot companion application that uses DockKit technology to create an interactive robot face that tracks and responds to human faces.
 
 ## Overview
-This sample code project shows you how to use your camera app with a DockKit accessory to frame and track subjects in real time. It demonstrates how DockKit system tracking works for your camera app, and how you can override system tracking to frame and track specific subjects using custom machine learning signals. It also shows you how to integrate physical buttons on your DockKit device with camera controls.
 
-The sample uses SwiftUI and the features of Swift concurrency to build a responsive camera app with DockKit control. See [AVCam: Building a camera app](https://developer.apple.com/documentation/avfoundation/capture_setup/avcam_building_a_camera_app) for more details about the camera implementation design. This sample code project uses the sample app from that project as a starting point to write a basic camera app.  The following diagram depicts the app’s design:
+This is **NOT a camera app**. This is a **robot companion app** that creates an engaging, interactive robot face on your device. The robot's eyes follow your face in real-time, creating a lifelike companion experience.
 
-![A diagram of two stacked flows depicting the relationships between app objects. The top flow consists of a horizontal rectangle labeled App Content View with arrows pointing to two stacked horizontal rectangles on the right labeled Camera and Dock Controller. The bottom flow has a horizontal rectangle labeled DockKit Camera App with arrows pointing to two horizontal rectangles on the right labeled Dock Controller Model and Camera Model. An arrow from the Dock Controller Model rectangle points right to a horizontal rectangle labeled Dock Control Service, and an arrow from that rectangle points upward to a horizontal rectangle labeled DockAccessory. An arrow from the Camera Model rectangle points right to a horizontal rectangle labeled Capture Service, and an arrow from that rectangle points downward to a horizontal rectangle labeled Movie Capture.  ](Documentation/app-assembly-overview.png)
+## Key Features
 
-The sample app defines two key services:
+- **Immersive Robot Face**: Full-screen animated robot face with LED-style eyes
+- **Real-time Face Tracking**: Robot eyes follow detected human faces naturally
+- **21 Emotional Expressions**: From happy to sad, excited to sleepy
+- **Interactive Modes**: 
+  - Tap to cycle through expressions
+  - Long press for random expression mode
+- **DockKit Integration**: Enhanced tracking with DockKit accessories
 
-* `CaptureService` is an actor that manages the interactions with the AVFoundation capture APIs. This object configures the capture pipeline and manages its life cycle, and it defines an asynchronous interface to capture videos. It also delegates handling of those operatons to the app's `MovieCapture` object.
+## User Experience
 
-* `DockControlService` is an actor that manages interactions with a [`DockAccessory`](https://developer.apple.com/documentation/dockkit/dockaccessory) using DockKit APIs. This object listens to `DockAccessory` connection/disconnection events, manages subscriptions to the connected `DockAccessory`, and controls its movements using an asynchronous interface. It also delegates camera control in response to `DockAccessory` events to the `CameraModel` object.
+1. **Instant Immersion**: App launches directly into robot face mode
+2. **No Camera UI**: The camera is invisible - you only see the robot
+3. **Natural Interaction**: The robot responds to your presence and movement
+4. **Full Screen Experience**: No distractions, just you and your robot companion
 
-- Note: Configuring and starting a capture session are blocking operations that can take time to complete. To keep the user interface responsive, the app defines `CaptureService` as an actor type to ensure that AVFoundation capture API calls don’t occur on the main thread.
+## Technical Architecture
+
+The app uses camera technology purely as a sensor for face detection. The camera preview is completely hidden (1x1 pixel, 0 opacity), providing face tracking data while maintaining the illusion of interacting with a robot, not a camera.
+
+## Requirements
+
+- iOS 17.0 or later
+- iPhone or iPad with front-facing camera
+- Optional: DockKit-compatible accessory for enhanced tracking
+
+## Privacy
+
+The app uses the camera solely for face detection to enable robot eye tracking. No photos or videos are captured or stored.
+
+## Build and Run
+
+1. Open `DockKitCamera.xcodeproj` in Xcode
+2. Select your target device
+3. Build and run
+4. Grant camera permissions when prompted
+5. Enjoy your robot companion!
+
+## Core Concept
+
+> "Your personal robot companion that sees and responds to you."
+
+This app transforms your device into an interactive robot face, creating a unique companion experience through the magic of face tracking technology.
 
 ## Configure the sample code project
 Because Simulator doesn't have access to device cameras and can't connect to a DockKit device, it isn't suitable for running the sample app. To run the app, you need an iPhone with iOS 18 or later.

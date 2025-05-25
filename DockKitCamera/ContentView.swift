@@ -70,101 +70,19 @@ struct ContentView<CameraModel: Camera, DockControllerModel: DockController>: Vi
     
     var body: some View {
         ZStack {
-            // Show robot face when in robot face mode, otherwise show camera preview
-            if dockController.isRobotFaceMode {
-                RobotFaceView(robotFaceState: dockController.robotFaceState, dockController: dockController)
-            } else {
-                // A container view that manages the placement of the preview.
-                PreviewContainer(camera: camera) {
-                    CameraPreview(source: camera.previewSource)
-                    .onTapGesture { location in
-                        // Select the subject at the device's location if tap-to-track is enabled.
-                        Task {
-                            let deviceLocation = await camera.devicePointConverted(from: location)
-                            _ = await dockController.selectSubject(at: deviceLocation, override: false)
-                        }
-                    }
-                    .simultaneousGesture(drag())
-                    .overlay {
-                        // The region-of-interest view denotes the region with framed subjects that someone selects.
-                        RegionOfInterestView(regionOfInterest: $regionOfInterest, dockController: dockController)
-                            .hidden(dockController.dockAccessoryFeatures.isSetROIEnabled == false
-                                    || dockController.status == .disconnected)
-                    }
-                    .overlay {
-                        // The view to show a live region-of-interest selection.
-                        ClearRectangleWithBorder(rect: dragRegionOfInterest())
-                            .hidden(dockController.dockAccessoryFeatures.isSetROIEnabled == false || isDragging == false)
-                    }
-                    .overlay {
-                        // The tracking summary view displays only when the tracking summary option is enabled.
-                        // The tracking summary view is hidden when the tracking mode is manual.
-                        TrackingSummaryView(trackedPersons: $dockController.trackedPersons)
-                            .hidden(dockController.dockAccessoryFeatures.isTrackingSummaryEnabled == false
-                                    || dockController.dockAccessoryFeatures.trackingMode == .manual)
-                    }
-                    // The chevron overlays for manual `DockAccessory` control.
-                    .overlay(alignment: .center) {
-                        VStack(alignment: .center, spacing: 100) {
-                            ChevronView(type: .tiltUp)
-                                .highPriorityGesture(
-                                    TapGesture()
-                                        .onEnded { _ in
-                                            Task {
-                                                await dockController.handleChevronTapped(chevronType: correctChevronType(.tiltUp),
-                                                                                                  speed: nil)
-                                            }
-                                        }
-                                )
-                            ChevronView(type: .tiltDown)
-                                .highPriorityGesture(
-                                    TapGesture()
-                                        .onEnded { _ in
-                                            Task {
-                                                await dockController.handleChevronTapped(chevronType: correctChevronType(.tiltDown),
-                                                                                                  speed: nil)
-                                            }
-                                        }
-                                )
-                        }
-                        .hidden(dockController.dockAccessoryFeatures.trackingMode != .manual || camera.isSwitchingVideoDevices)
-                    }
-                    .overlay(alignment: .center) {
-                        HStack(alignment: .center, spacing: 100) {
-                            ChevronView(type: .panLeft)
-                                .highPriorityGesture(
-                                    TapGesture()
-                                        .onEnded { _ in
-                                            Task {
-                                                await dockController.handleChevronTapped(chevronType: correctChevronType(.panLeft),
-                                                                                                  speed: nil)
-                                            }
-                                        }
-                                )
-                            ChevronView(type: .panRight)
-                                .highPriorityGesture(
-                                    TapGesture()
-                                        .onEnded { _ in
-                                            Task {
-                                                await dockController.handleChevronTapped(chevronType: correctChevronType(.panRight),
-                                                                                                  speed: nil)
-                                            }
-                                        }
-                                )
-                        }
-                        .hidden(dockController.dockAccessoryFeatures.trackingMode != .manual || camera.isSwitchingVideoDevices)
-                    }
-                }
-            }
+            // Always show robot face view - this is a robot face tracking app
+            RobotFaceView(robotFaceState: dockController.robotFaceState, dockController: dockController)
             
-            // The main camera user interface (only show when not in robot face mode).
-            if !dockController.isRobotFaceMode {
-                CameraUI(camera: camera, dockController: dockController)
-            }
+            // Keep camera preview running in background but completely hidden
+            CameraPreview(source: camera.previewSource)
+                .frame(width: 1, height: 1)
+                .opacity(0)
+                .allowsHitTesting(false)
+                .hidden()
         }
-        .statusBarHidden(dockController.isRobotFaceMode)
-        .persistentSystemOverlays(dockController.isRobotFaceMode ? .hidden : .automatic)
-        .animation(.easeInOut(duration: 0.3), value: dockController.isRobotFaceMode)
+        .ignoresSafeArea(.all)
+        .statusBarHidden(true)
+        .persistentSystemOverlays(.hidden)
     }
     
     /// Convert the chevron type to a type corrected for the current camera orientation.
