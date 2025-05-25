@@ -118,19 +118,6 @@ struct RobotFaceView: View {
                     modernStatusIndicator(for: geometry)
                 }
                 
-                // 点击提示（仅在第一次显示）
-                if !isManualMoodMode && robotFaceState.mood == .normal {
-                    VStack {
-                        Spacer()
-                        HStack {
-                            Spacer()
-                            tapHintLabel
-                        }
-                        .padding(.bottom, isLandscape(geometry) ? 60 : 100)
-                        .padding(.trailing, 30)
-                    }
-                }
-                
                 // 长按随机模式提示
                 if showLongPressHint {
                     VStack {
@@ -320,26 +307,6 @@ struct RobotFaceView: View {
                 Capsule()
                     .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
             )
-    }
-    
-    @ViewBuilder
-    private var tapHintLabel: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "hand.tap")
-                .font(.system(size: 14))
-            Text("点击屏幕切换表情")
-                .font(.system(size: 12, weight: .medium))
-        }
-        .foregroundColor(.white.opacity(0.6))
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(
-            Capsule()
-                .fill(Color.black.opacity(0.5))
-        )
-        .opacity(isManualMoodMode ? 0.0 : 1.0)
-        .scaleEffect(isManualMoodMode ? 0.5 : 1.0)
-        .animation(.easeInOut(duration: 0.5), value: isManualMoodMode)
     }
     
     @ViewBuilder
