@@ -89,6 +89,22 @@ final class DockControllerModel: DockController {
         }
     }
     
+    /// Enable robot face mode automatically during startup.
+    func enableRobotFaceMode() async {
+        guard !isRobotFaceMode else { return } // Already enabled
+        
+        isRobotFaceMode = true
+        robotFaceState.isTracking = true
+        robotFaceState.mood = .normal
+        
+        // Switch to front camera for robot face mode
+        if let cameraDelegate = await dockControlService.cameraCaptureDelegate as? CameraModel {
+            await cameraDelegate.selectCamera(position: .front)
+        }
+        
+        logger.info("Robot face mode enabled automatically during startup")
+    }
+    
     func selectSubject(at point: CGPoint?, override: Bool = false) async -> Bool {
         if dockAccessoryFeatures.isTapToTrackEnabled == false && !override {
             logger.error("Enable tap to track from DockKit menu to select subject.")

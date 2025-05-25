@@ -47,6 +47,9 @@ protocol DockController: AnyObject {
     /// Toggle robot face mode on/off.
     func toggleRobotFaceMode() async
     
+    /// Enable robot face mode automatically during startup.
+    func enableRobotFaceMode() async
+    
     /// Select the subject closest to a specific point in the camera preview.
     func selectSubject(at point: CGPoint?, override: Bool) async -> Bool
     

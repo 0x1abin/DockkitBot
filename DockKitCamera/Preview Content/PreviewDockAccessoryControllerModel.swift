@@ -48,6 +48,11 @@ class PreviewDockControllerModel: DockController {
         isRobotFaceMode.toggle()
     }
     
+    func enableRobotFaceMode() async {
+        logger.debug("enableRobotFaceMode isn't implemented in PreviewDockAccessory.")
+        isRobotFaceMode = true
+    }
+    
     func selectSubject(at point: CGPoint?, override: Bool = false) async -> Bool {
         logger.debug("selectSubject isn't implemented in PreviewDockAccessory.")
         return false
