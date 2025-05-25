@@ -434,7 +434,8 @@ actor DockControlService {
                     // Subscribe to the asynchronous sequence `batteryStates`.
                     for await batterySummaryState in try dockkitAccessory.batteryStates {
                         // Publish the battery update to the UI.
-                        await self.updateBattery(.available(percentage: batterySummaryState.batteryLevel, charging: batterySummaryState.chargeState == .charging))
+                        let batteryLevel = batterySummaryState.batteryLevel ?? 0
+                        await self.updateBattery(.available(percentage: batteryLevel, charging: batterySummaryState.chargeState == .charging))
                     }
                 } catch {
                     print("Error getting battery states summary from \(dockkitAccessory.debugDescription)")
