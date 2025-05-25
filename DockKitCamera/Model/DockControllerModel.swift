@@ -182,23 +182,37 @@ final class DockControllerModel: DockController {
     private func observeTrackedPersonsState() {
         Task {
             for await trackedPersonsUpdate in await dockControlService.$trackedPersons.values {
+                var adjustedPersons: [DockAccessoryTrackedPerson] = []
+                
                 for person in trackedPersonsUpdate {
 #if canImport(UIKit)
                     let orientation = UIDevice.current.orientation
                     if orientation == .landscapeLeft || orientation == .landscapeRight {
-                        person.rect = CGRect(x: person.rect.origin.x,
-                                             y: person.rect.origin.y,
-                                             width: person.rect.height,
-                                             height: person.rect.width)
+                        // Create a new person with adjusted rect instead of modifying the existing one
+                        let adjustedRect = CGRect(x: person.rect.origin.x,
+                                                y: person.rect.origin.y,
+                                                width: person.rect.height,
+                                                height: person.rect.width)
+                        let adjustedPerson = DockAccessoryTrackedPerson(
+                            saliency: person.saliency,
+                            rect: adjustedRect,
+                            speaking: person.speaking,
+                            looking: person.looking
+                        )
+                        adjustedPersons.append(adjustedPerson)
+                    } else {
+                        adjustedPersons.append(person)
                     }
+#else
+                    adjustedPersons.append(person)
 #endif
                 }
                 
-                trackedPersons = trackedPersonsUpdate
+                trackedPersons = adjustedPersons
                 
                 // Update robot face eye positions when in robot face mode
                 if isRobotFaceMode {
-                    updateRobotEyePositions(with: trackedPersonsUpdate)
+                    updateRobotEyePositions(with: adjustedPersons)
                 }
             }
         }

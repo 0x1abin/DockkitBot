@@ -2,7 +2,7 @@
 See the LICENSE.txt file for this sample's licensing information.
 
 Abstract:
-An object that retrieves camera devices.
+An object that provides device lookup functionality for camera management.
 */
 
 import AVFoundation
@@ -63,5 +63,35 @@ final class DeviceLookup {
         }
 #endif
         return cameras
+    }
+    
+    /// Returns the next available video device for capture.
+    func nextDevice(for currentDevice: AVCaptureDevice) -> AVCaptureDevice? {
+        let devices = AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.builtInWideAngleCamera],
+            mediaType: .video,
+            position: .unspecified
+        ).devices
+        
+        guard let currentIndex = devices.firstIndex(of: currentDevice) else {
+            return devices.first
+        }
+        
+        let nextIndex = (currentIndex + 1) % devices.count
+        return devices[nextIndex]
+    }
+    
+    /// Returns a device for the specified position.
+    func device(for position: AVCaptureDevice.Position) -> AVCaptureDevice? {
+        return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position)
+    }
+    
+    /// Returns all available video devices.
+    var allDevices: [AVCaptureDevice] {
+        return AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.builtInWideAngleCamera],
+            mediaType: .video,
+            position: .unspecified
+        ).devices
     }
 }

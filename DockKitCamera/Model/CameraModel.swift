@@ -2,18 +2,18 @@
 See the LICENSE.txt file for this sample's licensing information.
 
 Abstract:
-An object that provides the interface to the features of the camera.
+An object that provides the interface to the camera for robot face tracking.
 */
 
 import SwiftUI
 import Combine
 import AVFoundation
 
-/// An object that provides the interface to the features of the camera.
+/// An object that provides the interface to the camera for robot face tracking.
 ///
 /// This object provides the default implementation of the `Camera` protocol, which defines the interface
-/// to configure the camera hardware and to capture media. `CameraModel` doesn't perform capture itself, but is an
-/// `@Observable` type that mediates interactions between the app's SwiftUI views and `CaptureService`.
+/// to configure the camera hardware for face detection. `CameraModel` doesn't perform capture itself, but is an
+/// `@Observable` type that mediates interactions between the robot face view and `CaptureService`.
 ///
 /// For SwiftUI previews and Simulator, the app uses `PreviewCameraModel` instead.
 ///
@@ -32,20 +32,17 @@ final class CameraModel: Camera {
     /// The current camera-zoom magnification factor.
     private(set) var zoomFactor: Double = 1.0
     
-    /// The current state of the recording UI.
+    /// The current state of the recording UI (not used in robot face mode).
     var isRecording: Bool = false
     
     /// A Boolean value that indicates whether the app is currently switching video devices.
     private(set) var isSwitchingVideoDevices = false
     
-    /// An error that indicates the details of an error during photo or movie capture.
+    /// An error that indicates the details of an error during camera operation.
     private(set) var error: Error?
     
     /// An object that provides the connection between the capture session and the video preview layer.
     var previewSource: PreviewSource { captureService.previewSource }
-    
-    /// An object that saves captured media to a person's Photos library.
-    private let mediaLibrary = MediaLibrary()
     
     /// An object that manages the app's capture functionality.
     private let captureService = CaptureService()
@@ -73,7 +70,7 @@ final class CameraModel: Camera {
         }
     }
     
-    // MARK: - Changing modes and devices
+    // MARK: - Changing devices
     
     /// Selects the next available video device for capture.
     func switchVideoDevices() async {
@@ -89,78 +86,67 @@ final class CameraModel: Camera {
         await captureService.selectCamera(position: position)
     }
     
-    // MARK: - Video capture
-    /// Toggles the state of recording.
+    // MARK: - Recording (not used in robot face mode)
+    /// Toggles the state of recording (not used in robot face mode).
     func toggleRecording() async {
-        switch await captureService.captureActivity {
-        case .movieCapture:
-            do {
-                // If currently recording, stop the recording and write the movie to the library.
-                let movie = try await captureService.stopRecording()
-                try await mediaLibrary.save(movie: movie)
-            } catch {
-                self.error = error
-            }
-        default:
-            // In any other case, start recording.
-            await captureService.startRecording()
-        }
+        // Not implemented for robot face tracking app
     }
     
-    // MARK: - Zoom
-    /// Zooms in or out of the video feed.
-    func updateMagnification(for zoomType: CameraZoomType, by scale: Double) async {
+    // MARK: - Zoom (not used in robot face mode)
+    
+    /// Updates the camera's zoom magnification factor.
+    private func updateMagnification(for zoomType: CameraZoomType, by scale: Double = 0.2) async {
         await captureService.updateMagnification(for: zoomType, by: scale)
     }
     
-    // MARK: - Internal state observations
-    /// Set up the camera's state observations.
+    // MARK: - Coordinate conversion
+    
+    /// Converts a point from view space to device coordinates.
+    func devicePointConverted(from point: CGPoint) async -> CGPoint {
+        await captureService.devicePointConverted(from: point)
+    }
+    
+    /// Converts a rectangle from device coordinates to view space.
+    private func layerRectConverted(from rect: CGRect) async -> CGRect {
+        await captureService.layerRectConverted(from: rect)
+    }
+    
+    // MARK: - Tracking delegate
+    
+    /// Set the tracking delegate for face detection.
+    func setTrackingServiceDelegate(_ service: DockAccessoryTrackingDelegate) async {
+        await captureService.setTrackingServiceDelegate(service)
+    }
+    
+    // MARK: - State observation
+    
+    /// Observes the capture service for state changes.
     private func observeState() {
         Task {
-            // Await new capture-activity values from the capture service.
             for await activity in await captureService.$captureActivity.values {
-                // Forward the activity to the UI.
                 captureActivity = activity
             }
         }
         
         Task {
-            // Await orientation changes.
-            for await cameraOrientationUpdate in await captureService.$cameraOrientation.values {
-                cameraOrientation = cameraOrientationUpdate
+            for await orientation in await captureService.$cameraOrientation.values {
+                cameraOrientation = orientation
             }
         }
         
         Task {
-            for await zoomFactorUpdate in await captureService.$zoomFactor.values {
-                zoomFactor = zoomFactorUpdate
+            for await zoom in await captureService.$zoomFactor.values {
+                zoomFactor = zoom
             }
         }
     }
-    
-    // MARK: - DockKit tracking delegate
-    /// Set the tracking delegate.
-    func setTrackingServiceDelegate(_ service: DockAccessoryTrackingDelegate) async {
-        await captureService.setTrackingServiceDelegate(service)
-    }
-    
-    // MARK: - Miscellaneous
-    /// Convert a point from the view-space coordinates to the device coordinates, where (0,0) is top left and (1,1) is bottom right.
-    func devicePointConverted(from point: CGPoint) async -> CGPoint {
-        return await captureService.devicePointConverted(from: point)
-    }
-    
-    func layerRectConverted(from rect: CGRect) async -> CGRect {
-        return await captureService.layerRectConverted(from: rect)
-    }
 }
+
+// MARK: - Camera capture delegate (simplified for robot face tracking)
 
 extension CameraModel: CameraCaptureDelegate {
     func startOrStartCapture() {
-        Task {
-            isRecording.toggle()
-            await toggleRecording()
-        }
+        // Not used in robot face mode
     }
     
     func switchCamera() {
@@ -179,3 +165,4 @@ extension CameraModel: CameraCaptureDelegate {
         return await layerRectConverted(from: rect)
     }
 }
+

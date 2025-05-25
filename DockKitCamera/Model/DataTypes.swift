@@ -2,8 +2,7 @@
 See the LICENSE.txt file for this sample's licensing information.
 
 Abstract:
-Abstract:
- Supporting data types for the app.
+Supporting data types for the robot face tracking app.
 */
 
 import AVFoundation
@@ -30,20 +29,14 @@ enum CameraStatus {
 /// This type provides feedback to the UI regarding the active status of the `CaptureService` actor.
 enum CaptureActivity {
     case idle
-    /// A status that indicates the capture service is performing movie capture.
-    case movieCapture(duration: TimeInterval = 0.0)
+    /// A status that indicates the capture service is active (for face detection).
+    case active
     
     var currentTime: TimeInterval {
-        if case .movieCapture(let duration) = self {
-            return duration
-        }
         return .zero
     }
     
     var isRecording: Bool {
-        if case .movieCapture(_) = self {
-            return true
-        }
         return false
     }
 }
@@ -95,116 +88,19 @@ enum CameraZoomType {
     case decrease
 }
 
-/// A structure that contains the uniform type identifier and the movie URL.
-struct Movie: Sendable {
-    /// The temporary location of the file on disk.
-    let url: URL
-}
-
-enum CameraError: Error {
-    case videoDeviceUnavailable
-    case audioDeviceUnavailable
-    case addInputFailed
-    case addOutputFailed
-    case setupFailed
-    case deviceChangeFailed
-}
-
-protocol OutputService {
-    associatedtype Output: AVCaptureOutput
-    var output: Output { get }
-    var captureActivity: CaptureActivity { get }
-    func updateConfiguration(for device: AVCaptureDevice)
-    func setVideoRotationAngle(_ angle: CGFloat)
-}
-
-extension OutputService {
-    func setVideoRotationAngle(_ angle: CGFloat) {
-        // Set the rotation angle on the output object's video connection.
-        output.connection(with: .video)?.videoRotationAngle = angle
-    }
-    
-    func updateConfiguration(for device: AVCaptureDevice) {}
-    
-    func getVideoRotationAngle() -> CGFloat {
-        // Set the rotation angle on the output object's video connection.
-        output.connection(with: .video)?.videoRotationAngle ?? 0.0
-    }
-}
-
 // MARK: - DockKit supporting types
 
-@Observable
-/// An object that stores the state of a person's enabled DockKit features.
-class DockAccessoryFeatures {
-    var isTapToTrackEnabled = false
-    var isTrackingSummaryEnabled = false
-    var isSetROIEnabled = false
-    var trackingMode: TrackingMode = .custom
-    var framingMode: FramingMode = .auto
-    
-    var current: EnabledDockKitFeatures {
-        .init(isTapToTrackEnabled: isTapToTrackEnabled,
-              isTrackingSummaryEnabled: isTrackingSummaryEnabled,
-              isSetROIEnabled: isSetROIEnabled,
-              trackingMode: trackingMode, framingMode: framingMode)
-    }
-}
-
-@Observable
-/// An object that stores the tracking summary for a person.
-class DockAccessoryTrackedPerson: Identifiable {
-    let uuid = UUID()
-    let saliency: Int?
-    var rect: CGRect
-    let speaking: Double?
-    let looking: Double?
-    
-    init(saliency: Int? = nil, rect: CGRect, speaking: Double? = nil, looking: Double? = nil) {
-        self.saliency = saliency
-        self.rect = rect
-        self.speaking = speaking
-        self.looking = looking
-    }
-     
-    func update(rect: CGRect) {
-        self.rect = rect
-    }
-}
-
-struct EnabledDockKitFeatures {
-    let isTapToTrackEnabled: Bool
-    let isTrackingSummaryEnabled: Bool
-    let isSetROIEnabled: Bool
-    let trackingMode: TrackingMode
-    let framingMode: FramingMode
-}
-
-/// A protocol to perform DockKit-related functions.
-protocol DockAccessoryTrackingDelegate: AnyObject {
-    func track(metadata: [AVMetadataObject], sampleBuffer: CMSampleBuffer?,
-               deviceType: AVCaptureDevice.DeviceType, devicePosition: AVCaptureDevice.Position)
-}
-
-/// A protocol to perform capture-related functions.
-protocol CameraCaptureDelegate: AnyObject {
-    func startOrStartCapture()
-    func switchCamera()
-    func zoom(type: CameraZoomType, factor: Double)
-    func convertToViewSpace(from rect: CGRect) async -> CGRect
-}
-
-/// An enumeration that describes the current status of the camera.
+/// An enumeration that describes the current status of the DockKit accessory.
 enum DockAccessoryStatus {
-    /// A status that indicates there's no accessory connected.
+    /// A status that indicates the DockKit accessory is disconnected.
     case disconnected
-    /// A status that indicates an accessory is connected.
+    /// A status that indicates the DockKit accessory is connected.
     case connected
-    /// A status that indicates an accessory is connected and tracking.
+    /// A status that indicates the DockKit accessory is connected and tracking.
     case connectedTracking
 }
 
-/// An enumeration that describes the current status of the camera.
+/// An enumeration that describes the current battery status of the DockKit accessory.
 enum DockAccessoryBatteryStatus {
     /// A status that indicates the battery status is unavailable.
     case unavailable
@@ -262,14 +158,6 @@ enum Animation: String, CaseIterable, Identifiable {
     public var id: Self { self }
 }
 
-enum ChevronType: String, CaseIterable, Identifiable {
-    case tiltUp
-    case tiltDown
-    case panLeft
-    case panRight
-    public var id: Self { self }
-}
-
 // MARK: - Robot Face supporting types
 
 @Observable
@@ -314,4 +202,117 @@ enum RobotMood: String, CaseIterable, Identifiable {
     case envy = "envy"           // 嫉妒
     
     public var id: Self { self }
+}
+
+extension RobotMood {
+    /// Display name for the mood
+    var displayName: String {
+        switch self {
+        case .normal: return "正常"
+        case .happy: return "开心"
+        case .sad: return "伤心"
+        case .excited: return "兴奋"
+        case .sleepy: return "困倦"
+        case .anger: return "愤怒"
+        case .disgust: return "嫌恶"
+        case .fear: return "恐惧"
+        case .surprise: return "惊喜"
+        case .trust: return "信任"
+        case .anticipation: return "期待"
+        case .joy: return "欢愉"
+        case .sadness: return "悲伤"
+        case .curiosity: return "好奇"
+        case .acceptance: return "接纳"
+        case .contempt: return "蔑视"
+        case .pride: return "骄傲"
+        case .shame: return "羞耻"
+        case .love: return "爱"
+        case .guilt: return "内疚"
+        case .envy: return "嫉妒"
+        }
+    }
+    
+    /// Color associated with the mood
+    var color: Color {
+        switch self {
+        case .normal: return .white
+        case .happy: return .yellow
+        case .sad: return .blue
+        case .excited: return .orange
+        case .sleepy: return .purple
+        case .anger: return .red
+        case .disgust: return .green
+        case .fear: return .gray
+        case .surprise: return .cyan
+        case .trust: return .mint
+        case .anticipation: return .pink
+        case .joy: return .yellow
+        case .sadness: return .indigo
+        case .curiosity: return .teal
+        case .acceptance: return .green
+        case .contempt: return .brown
+        case .pride: return .orange
+        case .shame: return .gray
+        case .love: return .pink
+        case .guilt: return .purple
+        case .envy: return .green
+        }
+    }
+}
+
+// MARK: - DockKit data structures
+
+/// A structure that represents a tracked person from DockKit.
+struct DockAccessoryTrackedPerson {
+    let saliency: Int
+    var rect: CGRect
+    let speaking: Double?
+    let looking: Double?
+}
+
+/// A structure that represents the features available on a DockKit accessory.
+struct DockAccessoryFeatures {
+    var isSetROIEnabled = false
+    var isTapToTrackEnabled = false
+    var isTrackingSummaryEnabled = false
+    var trackingMode: TrackingMode = .system
+    var framingMode: FramingMode = .auto
+}
+
+// MARK: - Camera errors
+
+/// An enumeration that describes errors that can occur during camera operations.
+enum CameraError: Error {
+    case setupFailed
+    case addInputFailed
+    case addOutputFailed
+    case videoDeviceUnavailable
+}
+
+/// An enumeration that describes the chevron types for manual control.
+enum ChevronType {
+    case up
+    case down
+    case left
+    case right
+    case tiltUp
+    case tiltDown
+    case panLeft
+    case panRight
+}
+
+// MARK: - Protocols
+
+/// A protocol to perform DockKit-related functions.
+protocol DockAccessoryTrackingDelegate: AnyObject {
+    func track(metadata: [AVMetadataObject], sampleBuffer: CMSampleBuffer?,
+               deviceType: AVCaptureDevice.DeviceType, devicePosition: AVCaptureDevice.Position)
+}
+
+/// A protocol to perform capture-related functions.
+protocol CameraCaptureDelegate: AnyObject {
+    func startOrStartCapture()
+    func switchCamera()
+    func zoom(type: CameraZoomType, factor: Double)
+    func convertToViewSpace(from rect: CGRect) async -> CGRect
 }

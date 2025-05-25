@@ -1,8 +1,8 @@
 /*
-See the LICENSE.txt file for this sample’s licensing information.
+See the LICENSE.txt file for this sample's licensing information.
 
 Abstract:
-An object that manages a capture session and its inputs and outputs.
+An object that manages a capture session for face detection in robot face tracking.
 */
 
 import Foundation
@@ -12,11 +12,11 @@ import Combine
 import UIKit
 #endif
 
-/// An actor that manages the capture pipeline, which includes the capture session, device inputs, and capture outputs.
+/// An actor that manages the capture pipeline for face detection, which includes the capture session, device inputs, and metadata outputs.
 /// The app defines it as an `actor` type to ensure that all camera operations happen off the `@MainActor`.
-actor CaptureService {
+actor CaptureService: NSObject {
     
-    /// A value that indicates whether the capture service is idle or capturing a photo or movie.
+    /// A value that indicates whether the capture service is idle or active.
     @Published private(set) var captureActivity: CaptureActivity = .idle
     
     @Published private(set) var metadataObjects: [AVMetadataObject] = []
@@ -34,14 +34,17 @@ actor CaptureService {
     // The app's capture session.
     private let captureSession = AVCaptureSession()
     
-    // An object that manages the app's video-capture behavior.
-    private let movieCapture = MovieCapture()
-    
-    // An internal collection of output services.
-    private var outputServices: [any OutputService] { [movieCapture] }
-    
     // The video input for the currently selected device camera.
     private var activeVideoInput: AVCaptureDeviceInput?
+    
+    // The video data output to get video frames for face detection.
+    private var videoOutput: AVCaptureVideoDataOutput!
+    
+    // The metadata output to get detected face observations.
+    private var metadataOutput: AVCaptureMetadataOutput!
+    
+    // The newest sample buffer for face detection.
+    var sampleBuffer: CMSampleBuffer?
     
     // An object the service uses to retrieve capture devices.
     private let deviceLookup = DeviceLookup()
@@ -53,59 +56,61 @@ actor CaptureService {
     // A Boolean value that indicates whether the actor finished its required configuration.
     private var isSetUp = false
     
-    // A delegate to perform tracking.
-    private(set) weak var trackingDelegate: DockAccessoryTrackingDelegate?
+    // A delegate object to respond to face tracking events.
+    private var trackingDelegate: DockAccessoryTrackingDelegate?
     
-    init() {
-        // Create a source object to connect the preview view with the capture session.
+    override init() {
+        // Create a preview source for the capture session.
         previewSource = DefaultPreviewSource(session: captureSession)
+        super.init()
     }
     
     // MARK: - Authorization
-    /// A Boolean value that indicates whether a person authorizes the app to use
-    /// the device's cameras. If they didn't previously authorize the
-    /// app, querying this property prompts them for authorization.
+    
+    /// A Boolean value that indicates whether the person authorizes this app to use device cameras.
     var isAuthorized: Bool {
         get async {
             let status = AVCaptureDevice.authorizationStatus(for: .video)
-            // Determine whether a person previously authorized camera access.
+            
+            // Determine if the user previously authorized camera access.
             var isAuthorized = status == .authorized
-            // If the system can't determine the authorization status,
+            
+            // If the system can't determine the user's authorization status,
             // explicitly prompt them for approval.
             if status == .notDetermined {
                 isAuthorized = await AVCaptureDevice.requestAccess(for: .video)
             }
+            
             return isAuthorized
         }
     }
     
-    // MARK: - Capture session life cycle
+    // MARK: - Session lifecycle
+    
+    /// Starts the capture session.
     func start() async throws {
-        // Exit early if there's no authorization or if the session is already running.
-        guard await isAuthorized, !captureSession.isRunning else { return }
-        // Configure the session and start it.
         try setUpSession()
         captureSession.startRunning()
     }
     
-    // MARK: - Capture setup
-    // Performs the initial capture-session configuration.
+    /// Stops the capture session.
+    func stop() {
+        captureSession.stopRunning()
+    }
+    
+    // MARK: - Session configuration
+    
     private func setUpSession() throws {
         // Return early if already set up.
         guard !isSetUp else { return }
         
-        // Assign the capture activity.
-        movieCapture.$captureActivity.assign(to: &$captureActivity)
+        // Initialize outputs for face detection
+        videoOutput = AVCaptureVideoDataOutput()
+        metadataOutput = AVCaptureMetadataOutput()
         
-        Task {
-            // Listen for the metadata objects update.
-            for await metadataObjectsUpdate in movieCapture.$metadataObjects.values {
-                trackingDelegate?.track(metadata: metadataObjectsUpdate,
-                                        sampleBuffer: movieCapture.sampleBuffer,
-                                        deviceType: currentDevice.deviceType,
-                                        devicePosition: currentDevice.position)
-            }
-        }
+        // Set the video-capture and metadata-capture delegates.
+        metadataOutput.setMetadataObjectsDelegate(self, queue: DispatchQueue(label: "MetaDataOutputQueue"))
+        videoOutput.setSampleBufferDelegate(self, queue: DispatchQueue(label: "VideoframesOutputQueue"))
         
         do {
             // Retrieve the default camera.
@@ -114,14 +119,13 @@ actor CaptureService {
             // Add inputs for the default camera.
             activeVideoInput = try addInput(for: defaultCamera)
             
-            // Configure the session for movie capture.
+            // Configure the session for face detection.
             captureSession.sessionPreset = .high
             
-            try addOutput(movieCapture.videoOutput)
-            try addOutput(movieCapture.metadataOutput)
+            try addOutput(videoOutput)
+            try addOutput(metadataOutput)
             let objectTypes: [AVMetadataObject.ObjectType] = [.face, .humanBody]
-            movieCapture.metadataOutput.metadataObjectTypes = objectTypes
-            try addOutput(movieCapture.movieOutput)
+            metadataOutput.metadataObjectTypes = objectTypes
                         
             // Configure a rotation coordinator for the default video device.
             createRotationCoordinator(for: defaultCamera)
@@ -136,119 +140,89 @@ actor CaptureService {
     @discardableResult
     private func addInput(for device: AVCaptureDevice) throws -> AVCaptureDeviceInput {
         let input = try AVCaptureDeviceInput(device: device)
-        if captureSession.canAddInput(input) {
-            captureSession.addInput(input)
-        } else {
+        guard captureSession.canAddInput(input) else {
             throw CameraError.addInputFailed
         }
+        captureSession.addInput(input)
         return input
     }
     
-    // Adds an output to the capture session to connect the specified capture device, if allowed.
+    // Adds an output to the capture session.
     private func addOutput(_ output: AVCaptureOutput) throws {
-        if captureSession.canAddOutput(output) {
-            captureSession.addOutput(output)
-        } else {
+        guard captureSession.canAddOutput(output) else {
             throw CameraError.addOutputFailed
         }
+        captureSession.addOutput(output)
     }
     
-    // The device for the active video input.
+    // MARK: - Device management
+    
+    /// The currently active capture device.
     private var currentDevice: AVCaptureDevice {
         guard let device = activeVideoInput?.device else {
-            fatalError("No device found for current video input.")
+            fatalError("No active capture device.")
         }
         return device
     }
     
-    // MARK: - Device selection
-    
-    /// Changes the capture device that provides video input.
-    ///
-    /// The app calls this method in response to someone tapping the button in the UI to change cameras.
-    /// The implementation switches between the front and rear cameras, and
+    /// Selects the next available video device for capture.
     func selectNextVideoDevice() {
-        // The array of available video-capture devices.
-        let videoDevices = deviceLookup.cameras
-
-        // Find the index of the currently selected video device.
-        let selectedIndex = videoDevices.firstIndex(of: currentDevice) ?? 0
-        // Get the next index.
-        var nextIndex = selectedIndex + 1
-        // Wrap around if the next index is invalid.
-        if nextIndex == videoDevices.endIndex {
-            nextIndex = 0
-        }
-        
-        let nextDevice = videoDevices[nextIndex]
         // Change the session's active capture device.
+        let nextDevice = deviceLookup.nextDevice(for: currentDevice) ?? currentDevice
         changeCaptureDevice(to: nextDevice)
-        
-        // Set the zoom factor.
-        zoomFactor = nextDevice.videoZoomFactor
-        minZoomFactor = nextDevice.minAvailableVideoZoomFactor
-        
-        // The app only calls this method in response to someone requesting to switch cameras.
-        // Set the new selection as the person's preferred camera.
-        AVCaptureDevice.userPreferredCamera = nextDevice
     }
     
     /// Selects a specific camera position (front or back).
     func selectCamera(position: AVCaptureDevice.Position) {
-        let videoDevices = deviceLookup.cameras
-        
-        // Find a device with the specified position
-        if let targetDevice = videoDevices.first(where: { $0.position == position }) {
-            // Only change if we're not already using this device
-            if targetDevice != currentDevice {
-                changeCaptureDevice(to: targetDevice)
-                
-                // Set the zoom factor.
-                zoomFactor = targetDevice.videoZoomFactor
-                minZoomFactor = targetDevice.minAvailableVideoZoomFactor
-                
-                AVCaptureDevice.userPreferredCamera = targetDevice
-            }
+        if let device = deviceLookup.device(for: position) {
+            changeCaptureDevice(to: device)
         }
     }
     
-    // Changes the device the service uses for video capture.
+    /// Changes the capture device to the specified device.
     private func changeCaptureDevice(to device: AVCaptureDevice) {
-        // The service needs to have a valid video input prior to calling this method.
-        guard let currentInput = activeVideoInput else { fatalError() }
+        // Remove the current device input from the session.
+        if let activeVideoInput {
+            captureSession.removeInput(activeVideoInput)
+        }
         
-        // Bracket the following configuration in a begin/commit configuration pair.
-        captureSession.beginConfiguration()
-        defer { captureSession.commitConfiguration() }
-        
-        // Remove the existing video input before attempting to connect a new one.
-        captureSession.removeInput(currentInput)
         do {
-            // Attempt to connect a new input and device to the capture session.
+            // Add the new device to the session.
             activeVideoInput = try addInput(for: device)
-            // Configure a new rotation coordinator for the new device.
+            
+            // Update the zoom factor range for the new device.
+#if !os(macOS)
+            maxZoomFactor = min(device.activeFormat.videoMaxZoomFactor, 5.0)
+            minZoomFactor = device.minAvailableVideoZoomFactor
+#endif
+            
+            // Configure a rotation coordinator for the new device.
             createRotationCoordinator(for: device)
         } catch {
-            // Reconnect the existing camera on failure.
-            captureSession.addInput(currentInput)
+            print("Failed to add input for device: \(device). \(error)")
         }
     }
     
-    // MARK: Zoom
+    // MARK: - Zoom
+    
+    /// Updates the camera's zoom magnification factor.
     func updateMagnification(for zoomType: CameraZoomType, by scale: Double = 0.2) {
-        try? currentDevice.lockForConfiguration()
-        let magnification = (zoomType == .increase ? 1.0 : -1.0) * scale
-        var newZoomFactor = currentDevice.videoZoomFactor + magnification
-        newZoomFactor = max(min(newZoomFactor, self.maxZoomFactor), self.minZoomFactor)
-        newZoomFactor = Double(round(10 * newZoomFactor) / 10)
-        currentDevice.videoZoomFactor = newZoomFactor
-        currentDevice.unlockForConfiguration()
-        self.zoomFactor = newZoomFactor
+        do {
+            try currentDevice.lockForConfiguration()
+            let magnification = (zoomType == .increase ? 1.0 : -1.0) * scale
+            var newZoomFactor = currentDevice.videoZoomFactor + magnification
+            newZoomFactor = max(min(newZoomFactor, self.maxZoomFactor), self.minZoomFactor)
+            newZoomFactor = Double(round(10 * newZoomFactor) / 10)
+            currentDevice.videoZoomFactor = newZoomFactor
+            currentDevice.unlockForConfiguration()
+            self.zoomFactor = newZoomFactor
+        } catch {
+            print("Failed to update zoom factor: \(error)")
+        }
     }
     
     // MARK: - Rotation handling
     
-    /// Create a new rotation coordinator for the specified device and observe its state to monitor rotation changes.
     private func createRotationCoordinator(for device: AVCaptureDevice) {
         // Create a rotation coordinator for this device.
         rotationCoordinator = AVCaptureDevice.RotationCoordinator(device: device, previewLayer: videoPreviewLayer)
@@ -287,8 +261,8 @@ actor CaptureService {
     }
     
     private func updateCaptureRotation(_ angle: CGFloat) {
-        // Update the orientation for all output services.
-        outputServices.forEach { $0.setVideoRotationAngle(angle) }
+        // Update the orientation for video output.
+        videoOutput.connection(with: .video)?.videoRotationAngle = angle
         cameraOrientation = CameraOrientation(videoRotationAngle: angle, front: currentDevice.position == .front)
     }
     
@@ -300,25 +274,13 @@ actor CaptureService {
         return previewLayer
     }
     
-    // MARK: - Movie capture
-    /// Starts recording video. The video records until someone stops the recording,
-    /// which calls the following `stopRecording()` method.
-    func startRecording() {
-        movieCapture.startRecording()
-    }
-    
-    /// Stops the recording and returns the captured movie.
-    func stopRecording() async throws -> Movie {
-        try await movieCapture.stopRecording()
-    }
-    
-    // MARK: - DockKit tracking delegate
+    // MARK: - Face tracking delegate
     /// Set the tracking delegate.
     func setTrackingServiceDelegate(_ delegate: DockAccessoryTrackingDelegate) {
         trackingDelegate = delegate
     }
     
-    // MARK: - Miscellaneous
+    // MARK: - Coordinate conversion
     /// Convert a point from the view-space coordinates to the device coordinates, where (0,0) is top left and (1,1) is bottom right.
     func devicePointConverted(from point: CGPoint) -> CGPoint {
         // The point this call receives is in view-space coordinates. Convert this point to device coordinates.
@@ -346,46 +308,78 @@ actor CaptureService {
     
     /// `Rect` is a normalized rectangle in the current camera orientation where (0,0) is top left and (1,1) is bottom right.
     /// Correct this rectangle to the camera preview orientation (portrait).
-    func convertToCorrected(rect: CGRect) -> CGRect {
+    private func convertToCorrected(rect: CGRect) -> CGRect {
         switch cameraOrientation {
         case .portrait:
             return rect
         case .portraitUpsideDown:
-            return CGRect(x: 1 - rect.minX - rect.width,
-                          y: 1 - rect.minY - rect.height,
-                          width: rect.width,
-                          height: rect.height)
-        case .landscapeRight:
-            return CGRect(x: 1 - rect.minY - rect.height,
-                          y: rect.minX,
-                          width: rect.height,
-                          height: rect.width)
+            return CGRect(x: 1 - rect.maxX, y: 1 - rect.maxY, width: rect.width, height: rect.height)
         case .landscapeLeft:
-            return CGRect(x: rect.minY,
-                          y: 1 - rect.minX - rect.width,
-                          width: rect.height,
-                          height: rect.width)
+            return CGRect(x: rect.minY, y: 1 - rect.maxX, width: rect.height, height: rect.width)
+        case .landscapeRight:
+            return CGRect(x: 1 - rect.maxY, y: rect.minX, width: rect.height, height: rect.width)
         case .unknown:
             return rect
         }
     }
     
-    /// This point is a normalized point in the camera preview orientation (portrait).
-    /// Correct this point to the current camera orientation.
-    func convertFromCorrected(point: CGPoint) -> CGPoint {
+    /// `Point` is a normalized point in the current camera orientation where (0,0) is top left and (1,1) is bottom right.
+    /// Correct this point to the camera preview orientation (portrait).
+    private func convertFromCorrected(point: CGPoint) -> CGPoint {
         switch cameraOrientation {
         case .portrait:
             return point
         case .portraitUpsideDown:
             return CGPoint(x: 1 - point.x, y: 1 - point.y)
-        case .landscapeRight:
-            return CGPoint(x: point.y, y: 1 - point.x)
         case .landscapeLeft:
             return CGPoint(x: 1 - point.y, y: point.x)
+        case .landscapeRight:
+            return CGPoint(x: point.y, y: 1 - point.x)
         case .unknown:
             return point
         }
     }
+}
+
+// MARK: - Metadata-capture delegate
+extension CaptureService: AVCaptureMetadataOutputObjectsDelegate {
+    nonisolated func metadataOutput(_ output: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {
+        // Forward metadata to the main actor
+        Task {
+            await self.processMetadata(metadataObjects)
+        }
+    }
+    
+    private func processMetadata(_ metadataObjects: [AVMetadataObject]) async {
+        self.metadataObjects = metadataObjects
         
+        // Forward the metadata to the tracking delegate.
+        if let trackingDelegate = trackingDelegate {
+            trackingDelegate.track(metadata: metadataObjects, sampleBuffer: sampleBuffer,
+                                   deviceType: currentDevice.deviceType,
+                                   devicePosition: currentDevice.position)
+        }
+    }
+}
+
+// MARK: - Video-capture delegate
+extension CaptureService: AVCaptureVideoDataOutputSampleBufferDelegate {
+    nonisolated func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        // Forward sample buffer to the main actor
+        Task {
+            await self.processSampleBuffer(sampleBuffer)
+        }
+    }
+    
+    private func processSampleBuffer(_ sampleBuffer: CMSampleBuffer) async {
+        self.sampleBuffer = sampleBuffer
+        
+        // Forward the sample buffer to the tracking delegate.
+        if let trackingDelegate = trackingDelegate {
+            trackingDelegate.track(metadata: metadataObjects, sampleBuffer: sampleBuffer,
+                                   deviceType: currentDevice.deviceType,
+                                   devicePosition: currentDevice.position)
+        }
+    }
 }
 

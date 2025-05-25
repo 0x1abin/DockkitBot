@@ -55,10 +55,10 @@ actor DockControlService {
     
 #if !targetEnvironment(simulator)
     // The current tracking summary state.
-    private var lastTrackingSummary: DockAccessory.TrackingState? = nil
+    private var lastTrackingSummary: Any? = nil
     
     // The current battery state.
-    private var lastBatteryState: DockAccessory.BatteryState? = nil
+    private var lastBatteryState: Any? = nil
 #endif
     
     // A delegate to perform capture.
@@ -68,7 +68,7 @@ actor DockControlService {
     private var lastShutterEventTime: Date = .now
     
     // Update features, if necessary.
-    private weak var features: DockAccessoryFeatures? = nil
+    private var features: DockAccessoryFeatures? = nil
     
     // MARK: - DockKit setup
     /// Subscribe to accessory connection and tracking state changes.
@@ -104,7 +104,7 @@ actor DockControlService {
                 }
             }
         } catch {
-            logger.error("Error setting up DockKit session : \(error)")
+            print("Error setting up DockKit session : \(error)")
         }
 #endif
     }
@@ -119,7 +119,7 @@ actor DockControlService {
                     switch event {
                     case let .button(id, pressed):
                         // Log the custom button event.
-                        logger.notice("Got button event \(id): \(pressed ? "pressed" : "unpressed")")
+                        print("Got button event \(id): \(pressed ? "pressed" : "unpressed")")
                     case .cameraZoom(factor: let factor):
                         let zoomType = factor > 0 ? CameraZoomType.increase : CameraZoomType.decrease
                         // Implement the camera zoom.
@@ -137,7 +137,7 @@ actor DockControlService {
                     }
                 }
             } catch {
-                logger.error("Error listening for accessory events")
+                print("Error listening for accessory events")
             }
         }
     }
@@ -148,7 +148,7 @@ actor DockControlService {
             // Enable system tracking on the first connection.
             try await DockAccessoryManager.shared.setSystemTrackingEnabled(true)
         } catch {
-            logger.error("Error enabling system tracking")
+            print("Error enabling system tracking")
         }
         // Start the necessary subscriptions to accessory events and battery states.
         subscribeToAccessoryEvents(for: accesory)
@@ -161,14 +161,14 @@ actor DockControlService {
     func updateFraming(to framing: FramingMode) async -> Bool {
 #if !targetEnvironment(simulator)
         guard let accessory = dockkitAccessory else {
-            logger.error("No DockKit accessory connected")
+            print("No DockKit accessory connected")
             return false
         }
         do {
             // Set the DockKit `FramingMode` to correspond to all framing modes.
             try await accessory.setFramingMode(dockKitFramingMode(from: framing))
         } catch {
-            logger.error("Error setting framing mode to \(framing.rawValue)")
+            print("Error setting framing mode to \(framing.rawValue)")
             return false
         }
 #endif
@@ -185,7 +185,7 @@ actor DockControlService {
             // Call `systemTrackingEnabled` with `true` to enable the system tracking mode.
             try await DockAccessoryManager.shared.setSystemTrackingEnabled(trackingMode == .system ? true : false)
         } catch {
-            logger.error("Error setting tracking mode to \(trackingMode.rawValue)")
+            print("Error setting tracking mode to \(trackingMode.rawValue)")
             return false
         }
 #endif
@@ -198,7 +198,7 @@ actor DockControlService {
     func selectSubject(at point: CGPoint?) async -> Bool {
 #if !targetEnvironment(simulator)
         guard let accessory = dockkitAccessory else {
-            logger.error("No DockKit accessory connected")
+            print("No DockKit accessory connected")
             return false
         }
         
@@ -211,7 +211,7 @@ actor DockControlService {
                 try await accessory.selectSubjects([])
             }
         } catch {
-            logger.error("Error selecting subject at (\(point?.x ?? 0.0), \(point?.y ?? 0.0)): \(error)")
+            print("Error selecting subject at (\(point?.x ?? 0.0), \(point?.y ?? 0.0)): \(error)")
             return false
         }
 #endif
@@ -224,7 +224,7 @@ actor DockControlService {
     func setRegionOfInterest(to region: CGRect) async -> Bool {
 #if !targetEnvironment(simulator)
         guard let accessory = dockkitAccessory else {
-            logger.error("No DockKit accessory connected")
+            print("No DockKit accessory connected")
             return false
         }
     
@@ -232,7 +232,7 @@ actor DockControlService {
             // Set the region of interest to frame the subjects in.
             try await accessory.setRegionOfInterest(region)
         } catch {
-            logger.error("Error setting the region of interest to (\(region.midX), \(region.midY)) with size (\(region.width), \(region.height)): \(error)")
+            print("Error setting the region of interest to (\(region.midX), \(region.midY)) with size (\(region.width), \(region.height)): \(error)")
             return false
         }
 #endif
@@ -243,13 +243,13 @@ actor DockControlService {
     func animate(_ animation: Animation) async -> Bool {
 #if !targetEnvironment(simulator)
         guard let dockkitAccessory = dockkitAccessory else {
-            logger.error("No DockKit accessory connected")
+            print("No DockKit accessory connected")
             return false
         }
         
         // Return if `DockAccessory` is performing an animation.
         if animating {
-            logger.error("DockKit accessory busy animating")
+            print("DockKit accessory busy animating")
             return false
         }
         
@@ -267,7 +267,7 @@ actor DockControlService {
             // Restore the system tracking after running the animation.
             try await DockAccessoryManager.shared.setSystemTrackingEnabled(trackingMode == .system ? true : false)
         } catch {
-            logger.error("Error executing animation \(animation.rawValue) : \(error)")
+            print("Error executing animation \(animation.id) : \(error)")
             try? await DockAccessoryManager.shared.setSystemTrackingEnabled(trackingMode == .system ? true : false)
             animating = false
             return false
@@ -288,24 +288,24 @@ actor DockControlService {
         let orientation = await getCameraOrientation()
         
         if DockAccessoryManager.shared.isSystemTrackingEnabled {
-            logger.notice("System tracking is enabled, ignoring command")
+            print("System tracking is enabled, ignoring command")
             return
         }
         
         guard let dockkitAccessory = dockkitAccessory else {
-            logger.error("No DockKit accessory connected")
+            print("No DockKit accessory connected")
             return
         }
         
         // Return if `DockAccessory` is performing an animation.
         if animating {
-            logger.error("DockKit accessory busy animating")
+            print("DockKit accessory busy animating")
             return
         }
         
         // Get the image buffer from `CMSampleBuffer`.
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
-            logger.error("Error getting pixel buffer")
+            print("Error getting pixel buffer")
             return
         }
         
@@ -349,42 +349,24 @@ actor DockControlService {
         if enable {
             
             guard let dockkitAccessory = dockkitAccessory else {
-                logger.error("No DockKit accessory connected")
+                print("No DockKit accessory connected")
                 // Reset the feature to update the UI.
                 self.features?.isTrackingSummaryEnabled = false
                 return
             }
             
-            trackingSummaryTask = Task {
+            trackingSummaryTask = Task { [weak self] in
+                guard let self = self else { return }
                 do {
                     for await trackingSummaryState in try dockkitAccessory.trackingStates {
-                        self.lastTrackingSummary = trackingSummaryState
-                        
-                        var trackedPersons: [DockAccessoryTrackedPerson] = []
-                        for subject in trackingSummaryState.trackedSubjects {
-                            // Save the tracking state for all subjects that are people.
-                            switch subject {
-                            case .person(let person):
-                                if let rect = await cameraCaptureDelegate?.convertToViewSpace(from: person.rect) {
-                                    // Create a `DockAccessoryTrackedPerson` object from `TrackingState`.
-                                    trackedPersons.append(DockAccessoryTrackedPerson(saliency: person.saliencyRank,
-                                                                                     rect: rect,
-                                                                                     speaking: person.speakingConfidence,
-                                                                                     looking: person.lookingAtCameraConfidence))
-                                    print("pos: \(person.rect.minX) \(person.rect.minY)")
-                                }
-                            default:
-                                // Do nothing.
-                                break
-                            }
-                        }
-                        
-                        self.trackedPersons = trackedPersons
+                        await self.updateTrackingSummary(trackingSummaryState)
                     }
                 } catch {
-                    logger.error("Error getting tracking summary from \(dockkitAccessory.debugDescription)")
+                    print("Error getting tracking summary from \(dockkitAccessory.debugDescription)")
                     // Reset the feature to update the UI.
-                    self.features?.isTrackingSummaryEnabled = false
+                    await self.updateFeatures { features in
+                        features?.isTrackingSummaryEnabled = false
+                    }
                 }
             }
         } else {
@@ -395,33 +377,68 @@ actor DockControlService {
 #endif
     }
     
+    private func updateTrackingSummary(_ trackingSummaryState: Any) async {
+#if !targetEnvironment(simulator)
+        guard let trackingSummaryState = trackingSummaryState as? DockAccessory.TrackingState else {
+            return
+        }
+        
+        self.lastTrackingSummary = trackingSummaryState
+        
+        var trackedPersons: [DockAccessoryTrackedPerson] = []
+        for subject in trackingSummaryState.trackedSubjects {
+            // Save the tracking state for all subjects that are people.
+            switch subject {
+            case .person(let person):
+                if let rect = await cameraCaptureDelegate?.convertToViewSpace(from: person.rect) {
+                    // Create a `DockAccessoryTrackedPerson` object from `TrackingState`.
+                    trackedPersons.append(DockAccessoryTrackedPerson(saliency: person.saliencyRank,
+                                                                     rect: rect,
+                                                                     speaking: person.speakingConfidence,
+                                                                     looking: person.lookingAtCameraConfidence))
+                    print("pos: \(person.rect.minX) \(person.rect.minY)")
+                }
+            default:
+                // Do nothing.
+                break
+            }
+        }
+        
+        self.trackedPersons = trackedPersons
+#endif
+    }
+    
+    private func updateFeatures(_ update: @escaping (inout DockAccessoryFeatures?) -> Void) async {
+        update(&features)
+    }
+    
     /// Turn the subscription on or off for the battery summary of the DockKit accessory.
     func toggleBatterySummary(to enable: Bool) {
 #if !targetEnvironment(simulator)
         if enable {
             
             if batterySummaryTask != nil {
-                logger.log("battery summary task already running, not starting a new one")
+                print("battery summary task already running, not starting a new one")
                 return
             }
             
             guard let dockkitAccessory = dockkitAccessory else {
-                logger.error("No DockKit accessory connected")
+                print("No DockKit accessory connected")
                 return
             }
             
-            batterySummaryTask = Task {
+            batterySummaryTask = Task { [weak self] in
+                guard let self = self else { return }
                 do {
-                    logger.notice("subscribing to batterySummaryState")
+                    print("subscribing to batterySummaryState")
                     // Subscribe to the asynchronous sequence `batteryStates`.
                     for await batterySummaryState in try dockkitAccessory.batteryStates {
                         // Publish the battery update to the UI.
-                        battery = .available(percentage: batterySummaryState.batteryLevel, charging: batterySummaryState.chargeState == .charging)
+                        await self.updateBattery(.available(percentage: batterySummaryState.batteryLevel, charging: batterySummaryState.chargeState == .charging))
                     }
                 } catch {
-                    logger.error("Error getting battery states summary from \(dockkitAccessory.debugDescription)")
+                    print("Error getting battery states summary from \(dockkitAccessory.debugDescription)")
                 }
-                
             }
         } else {
             // Publish the battery update to the UI.
@@ -432,16 +449,20 @@ actor DockControlService {
 #endif
     }
     
+    private func updateBattery(_ newBattery: DockAccessoryBatteryStatus) async {
+        battery = newBattery
+    }
+    
     // MARK: - DockKit manual control
     func handleChevronTapped(chevronType: ChevronType, speed: Double = 0.2) async {
 #if !targetEnvironment(simulator)
         guard trackingMode == .manual else {
-            logger.error("Enable manual control from DockKit menu to manually control the accessory.")
+            print("Enable manual control from DockKit menu to manually control the accessory.")
             return
         }
         
         guard let dockkitAccessory = dockkitAccessory else {
-            logger.error("No DockKit accessory connected")
+            print("No DockKit accessory connected")
             return
         }
         
@@ -457,6 +478,8 @@ actor DockControlService {
             velocity.y = -speed
         case .panRight:
             velocity.y = speed
+        default:
+            break
         }
         
         do {
@@ -464,7 +487,7 @@ actor DockControlService {
             try await Task.sleep(nanoseconds: NSEC_PER_SEC / 4) // 0.25 sec
             try await dockkitAccessory.setAngularVelocity(Vector3D())
         } catch {
-            logger.error("Error handling chevron \(chevronType.rawValue): \(error)")
+            print("Error handling chevron: \(error)")
         }
 #endif
     }
@@ -521,6 +544,7 @@ actor DockControlService {
     
     @MainActor
     private func getCameraOrientation() -> DockAccessory.CameraOrientation {
+#if canImport(UIKit)
         switch UIDevice.current.orientation {
         case .portrait:
             return .portrait
@@ -537,6 +561,9 @@ actor DockControlService {
         default:
             return .corrected
         }
+#else
+        return .corrected
+#endif
     }
 #endif
     

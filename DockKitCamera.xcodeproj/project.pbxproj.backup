@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		29104EFF09B346CBB52FD9B0 /* RobotFaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B2232BEA044D0CB0C67755 /* RobotFaceView.swift */; };
+		3E27DFA82DE22F4200F27742 /* MotorActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E27DFA62DE22F4200F27742 /* MotorActions.swift */; };
+		3E27DFA92DE22F4200F27742 /* MoodAnimations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E27DFA52DE22F4200F27742 /* MoodAnimations.swift */; };
+		3E27DFAA2DE22F4200F27742 /* VerticalLEDEyeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E27DFA72DE22F4200F27742 /* VerticalLEDEyeView.swift */; };
 		55308A912C3C8DB200814AB2 /* StatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308A812C3C8DB200814AB2 /* StatusView.swift */; };
 		55308A922C3C8DB200814AB2 /* CaptureButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308A872C3C8DB200814AB2 /* CaptureButton.swift */; };
 		55308A932C3C8DB200814AB2 /* MainToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308A8B2C3C8DB200814AB2 /* MainToolbar.swift */; };
@@ -44,6 +48,10 @@
 
 /* Begin PBXFileReference section */
 		054950D9C85897F88C2ADD92 /* SampleCode.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = SampleCode.xcconfig; path = Configuration/SampleCode.xcconfig; sourceTree = "<group>"; };
+		3E27DFA52DE22F4200F27742 /* MoodAnimations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodAnimations.swift; sourceTree = "<group>"; };
+		3E27DFA62DE22F4200F27742 /* MotorActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotorActions.swift; sourceTree = "<group>"; };
+		3E27DFA72DE22F4200F27742 /* VerticalLEDEyeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerticalLEDEyeView.swift; sourceTree = "<group>"; };
+		49B2232BEA044D0CB0C67755 /* RobotFaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RobotFaceView.swift; sourceTree = "<group>"; };
 		55122A412C1BCF0A0055FBF1 /* DockKit-Camera-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "DockKit-Camera-Info.plist"; sourceTree = SOURCE_ROOT; };
 		55308A7F2C3C8DB200814AB2 /* RecordingTimeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingTimeView.swift; sourceTree = "<group>"; };
 		55308A802C3C8DB200814AB2 /* RegionOfInterestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionOfInterestView.swift; sourceTree = "<group>"; };
@@ -139,6 +147,10 @@
 				55308A8C2C3C8DB200814AB2 /* PreviewContainer.swift */,
 				55308A8D2C3C8DB200814AB2 /* SwitchCameraButton.swift */,
 				55308A8E2C3C8DB200814AB2 /* TrackingSummaryView.swift */,
+				49B2232BEA044D0CB0C67755 /* RobotFaceView.swift */,
+				3E27DFA52DE22F4200F27742 /* MoodAnimations.swift */,
+				3E27DFA62DE22F4200F27742 /* MotorActions.swift */,
+				3E27DFA72DE22F4200F27742 /* VerticalLEDEyeView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -305,6 +317,9 @@
 				55308AD32C3C8FDA00814AB2 /* MediaLibrary.swift in Sources */,
 				5550ACB72C1D146B002651AC /* DockAccessoryController.swift in Sources */,
 				5550ACBF2C1E7261002651AC /* PreviewDockAccessoryControllerModel.swift in Sources */,
+				3E27DFA82DE22F4200F27742 /* MotorActions.swift in Sources */,
+				3E27DFA92DE22F4200F27742 /* MoodAnimations.swift in Sources */,
+				3E27DFAA2DE22F4200F27742 /* VerticalLEDEyeView.swift in Sources */,
 				55A595A52C07D1DD001D3AA4 /* ContentView.swift in Sources */,
 				5550ACBB2C1E6C8D002651AC /* DockControllerModel.swift in Sources */,
 				5550ACB92C1D17CA002651AC /* DockControlService.swift in Sources */,
@@ -331,6 +346,7 @@
 				55308AA02C3C8DB200814AB2 /* BatteryView.swift in Sources */,
 				55A595A32C07D1DD001D3AA4 /* DockKit_CameraApp.swift in Sources */,
 				5550AC8E2C1CD362002651AC /* DataTypes.swift in Sources */,
+				29104EFF09B346CBB52FD9B0 /* RobotFaceView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -478,7 +494,7 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -516,7 +532,7 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
 				LD_RUNPATH_SEARCH_PATHS = (

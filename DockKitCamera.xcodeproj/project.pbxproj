@@ -11,29 +11,12 @@
 		3E27DFA82DE22F4200F27742 /* MotorActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E27DFA62DE22F4200F27742 /* MotorActions.swift */; };
 		3E27DFA92DE22F4200F27742 /* MoodAnimations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E27DFA52DE22F4200F27742 /* MoodAnimations.swift */; };
 		3E27DFAA2DE22F4200F27742 /* VerticalLEDEyeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E27DFA72DE22F4200F27742 /* VerticalLEDEyeView.swift */; };
-		55308A912C3C8DB200814AB2 /* StatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308A812C3C8DB200814AB2 /* StatusView.swift */; };
-		55308A922C3C8DB200814AB2 /* CaptureButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308A872C3C8DB200814AB2 /* CaptureButton.swift */; };
-		55308A932C3C8DB200814AB2 /* MainToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308A8B2C3C8DB200814AB2 /* MainToolbar.swift */; };
-		55308A942C3C8DB200814AB2 /* DockKitMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308A8A2C3C8DB200814AB2 /* DockKitMenu.swift */; };
-		55308A962C3C8DB200814AB2 /* PreviewContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308A8C2C3C8DB200814AB2 /* PreviewContainer.swift */; };
-		55308A972C3C8DB200814AB2 /* ZoomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308A822C3C8DB200814AB2 /* ZoomView.swift */; };
 		55308A982C3C8DB200814AB2 /* CameraPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308A852C3C8DB200814AB2 /* CameraPreview.swift */; };
-		55308A992C3C8DB200814AB2 /* RecordingTimeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308A7F2C3C8DB200814AB2 /* RecordingTimeView.swift */; };
-		55308A9A2C3C8DB200814AB2 /* RegionOfInterestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308A802C3C8DB200814AB2 /* RegionOfInterestView.swift */; };
-		55308A9B2C3C8DB200814AB2 /* ConnectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308A892C3C8DB200814AB2 /* ConnectionView.swift */; };
-		55308A9C2C3C8DB200814AB2 /* ChevronView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308A882C3C8DB200814AB2 /* ChevronView.swift */; };
-		55308A9D2C3C8DB200814AB2 /* CameraUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308A862C3C8DB200814AB2 /* CameraUI.swift */; };
-		55308A9E2C3C8DB200814AB2 /* TrackingSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308A8E2C3C8DB200814AB2 /* TrackingSummaryView.swift */; };
-		55308A9F2C3C8DB200814AB2 /* SwitchCameraButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308A8D2C3C8DB200814AB2 /* SwitchCameraButton.swift */; };
-		55308AA02C3C8DB200814AB2 /* BatteryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308A842C3C8DB200814AB2 /* BatteryView.swift */; };
-		55308AD02C3C8EDB00814AB2 /* MovieCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308ACE2C3C8EDB00814AB2 /* MovieCapture.swift */; };
 		55308AD12C3C8EDB00814AB2 /* DeviceLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308ACD2C3C8EDB00814AB2 /* DeviceLookup.swift */; };
-		55308AD32C3C8FDA00814AB2 /* MediaLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308AD22C3C8FDA00814AB2 /* MediaLibrary.swift */; };
 		5550AC8E2C1CD362002651AC /* DataTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5550AC8D2C1CD362002651AC /* DataTypes.swift */; };
 		5550AC912C1CDA47002651AC /* CaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5550AC902C1CDA47002651AC /* CaptureService.swift */; };
 		5550AC9B2C1CDD85002651AC /* Camera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5550AC9A2C1CDD85002651AC /* Camera.swift */; };
 		5550AC9D2C1CDDBD002651AC /* CameraModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5550AC9C2C1CDDBD002651AC /* CameraModel.swift */; };
-		5550ACA02C1CE371002651AC /* FoundationExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5588DAD32C1CD3030019FB08 /* FoundationExtensions.swift */; };
 		5550ACA52C1CF87A002651AC /* ViewExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5550ACA42C1CF879002651AC /* ViewExtensions.swift */; };
 		5550ACB72C1D146B002651AC /* DockAccessoryController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5550ACB62C1D146B002651AC /* DockAccessoryController.swift */; };
 		5550ACB92C1D17CA002651AC /* DockControlService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5550ACB82C1D17CA002651AC /* DockControlService.swift */; };
@@ -53,24 +36,8 @@
 		3E27DFA72DE22F4200F27742 /* VerticalLEDEyeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerticalLEDEyeView.swift; sourceTree = "<group>"; };
 		49B2232BEA044D0CB0C67755 /* RobotFaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RobotFaceView.swift; sourceTree = "<group>"; };
 		55122A412C1BCF0A0055FBF1 /* DockKit-Camera-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "DockKit-Camera-Info.plist"; sourceTree = SOURCE_ROOT; };
-		55308A7F2C3C8DB200814AB2 /* RecordingTimeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingTimeView.swift; sourceTree = "<group>"; };
-		55308A802C3C8DB200814AB2 /* RegionOfInterestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionOfInterestView.swift; sourceTree = "<group>"; };
-		55308A812C3C8DB200814AB2 /* StatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusView.swift; sourceTree = "<group>"; };
-		55308A822C3C8DB200814AB2 /* ZoomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomView.swift; sourceTree = "<group>"; };
-		55308A842C3C8DB200814AB2 /* BatteryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryView.swift; sourceTree = "<group>"; };
 		55308A852C3C8DB200814AB2 /* CameraPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreview.swift; sourceTree = "<group>"; };
-		55308A862C3C8DB200814AB2 /* CameraUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraUI.swift; sourceTree = "<group>"; };
-		55308A872C3C8DB200814AB2 /* CaptureButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureButton.swift; sourceTree = "<group>"; };
-		55308A882C3C8DB200814AB2 /* ChevronView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChevronView.swift; sourceTree = "<group>"; };
-		55308A892C3C8DB200814AB2 /* ConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionView.swift; sourceTree = "<group>"; };
-		55308A8A2C3C8DB200814AB2 /* DockKitMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockKitMenu.swift; sourceTree = "<group>"; };
-		55308A8B2C3C8DB200814AB2 /* MainToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainToolbar.swift; sourceTree = "<group>"; };
-		55308A8C2C3C8DB200814AB2 /* PreviewContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewContainer.swift; sourceTree = "<group>"; };
-		55308A8D2C3C8DB200814AB2 /* SwitchCameraButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwitchCameraButton.swift; sourceTree = "<group>"; };
-		55308A8E2C3C8DB200814AB2 /* TrackingSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingSummaryView.swift; sourceTree = "<group>"; };
 		55308ACD2C3C8EDB00814AB2 /* DeviceLookup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceLookup.swift; sourceTree = "<group>"; };
-		55308ACE2C3C8EDB00814AB2 /* MovieCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovieCapture.swift; sourceTree = "<group>"; };
-		55308AD22C3C8FDA00814AB2 /* MediaLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaLibrary.swift; sourceTree = "<group>"; };
 		5550AC8D2C1CD362002651AC /* DataTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataTypes.swift; sourceTree = "<group>"; };
 		5550AC902C1CDA47002651AC /* CaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureService.swift; sourceTree = "<group>"; };
 		5550AC9A2C1CDD85002651AC /* Camera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Camera.swift; sourceTree = "<group>"; };
@@ -83,7 +50,6 @@
 		5550ACBE2C1E7261002651AC /* PreviewDockAccessoryControllerModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewDockAccessoryControllerModel.swift; sourceTree = "<group>"; };
 		557AECCF2C4AF452006C539B /* DockKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DockKit.framework; path = System/Library/Frameworks/DockKit.framework; sourceTree = SDKROOT; };
 		557AECD12C617F0E006C539B /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		5588DAD32C1CD3030019FB08 /* FoundationExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoundationExtensions.swift; sourceTree = "<group>"; };
 		55A5959F2C07D1DD001D3AA4 /* DockKitCamera.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DockKitCamera.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		55A595A22C07D1DD001D3AA4 /* DockKit_CameraApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockKit_CameraApp.swift; sourceTree = "<group>"; };
 		55A595A42C07D1DD001D3AA4 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -115,7 +81,6 @@
 		55122A892C1CD2C60055FBF1 /* Support */ = {
 			isa = PBXGroup;
 			children = (
-				5588DAD32C1CD3030019FB08 /* FoundationExtensions.swift */,
 				5550ACA42C1CF879002651AC /* ViewExtensions.swift */,
 			);
 			path = Support;
@@ -124,10 +89,6 @@
 		55308A832C3C8DB200814AB2 /* Overlays */ = {
 			isa = PBXGroup;
 			children = (
-				55308A7F2C3C8DB200814AB2 /* RecordingTimeView.swift */,
-				55308A802C3C8DB200814AB2 /* RegionOfInterestView.swift */,
-				55308A812C3C8DB200814AB2 /* StatusView.swift */,
-				55308A822C3C8DB200814AB2 /* ZoomView.swift */,
 			);
 			path = Overlays;
 			sourceTree = "<group>";
@@ -136,17 +97,7 @@
 			isa = PBXGroup;
 			children = (
 				55308A832C3C8DB200814AB2 /* Overlays */,
-				55308A842C3C8DB200814AB2 /* BatteryView.swift */,
 				55308A852C3C8DB200814AB2 /* CameraPreview.swift */,
-				55308A862C3C8DB200814AB2 /* CameraUI.swift */,
-				55308A872C3C8DB200814AB2 /* CaptureButton.swift */,
-				55308A882C3C8DB200814AB2 /* ChevronView.swift */,
-				55308A892C3C8DB200814AB2 /* ConnectionView.swift */,
-				55308A8A2C3C8DB200814AB2 /* DockKitMenu.swift */,
-				55308A8B2C3C8DB200814AB2 /* MainToolbar.swift */,
-				55308A8C2C3C8DB200814AB2 /* PreviewContainer.swift */,
-				55308A8D2C3C8DB200814AB2 /* SwitchCameraButton.swift */,
-				55308A8E2C3C8DB200814AB2 /* TrackingSummaryView.swift */,
 				49B2232BEA044D0CB0C67755 /* RobotFaceView.swift */,
 				3E27DFA52DE22F4200F27742 /* MoodAnimations.swift */,
 				3E27DFA62DE22F4200F27742 /* MotorActions.swift */,
@@ -159,7 +110,6 @@
 			isa = PBXGroup;
 			children = (
 				55308ACD2C3C8EDB00814AB2 /* DeviceLookup.swift */,
-				55308ACE2C3C8EDB00814AB2 /* MovieCapture.swift */,
 			);
 			path = Camera;
 			sourceTree = "<group>";
@@ -175,7 +125,6 @@
 		5588DAD52C1CD34F0019FB08 /* Model */ = {
 			isa = PBXGroup;
 			children = (
-				55308AD22C3C8FDA00814AB2 /* MediaLibrary.swift */,
 				5550AC8D2C1CD362002651AC /* DataTypes.swift */,
 				5550AC9A2C1CDD85002651AC /* Camera.swift */,
 				5550ACB62C1D146B002651AC /* DockAccessoryController.swift */,
@@ -314,7 +263,6 @@
 			files = (
 				5550AC912C1CDA47002651AC /* CaptureService.swift in Sources */,
 				5550AC9D2C1CDDBD002651AC /* CameraModel.swift in Sources */,
-				55308AD32C3C8FDA00814AB2 /* MediaLibrary.swift in Sources */,
 				5550ACB72C1D146B002651AC /* DockAccessoryController.swift in Sources */,
 				5550ACBF2C1E7261002651AC /* PreviewDockAccessoryControllerModel.swift in Sources */,
 				3E27DFA82DE22F4200F27742 /* MotorActions.swift in Sources */,
@@ -323,27 +271,11 @@
 				55A595A52C07D1DD001D3AA4 /* ContentView.swift in Sources */,
 				5550ACBB2C1E6C8D002651AC /* DockControllerModel.swift in Sources */,
 				5550ACB92C1D17CA002651AC /* DockControlService.swift in Sources */,
-				55308AD02C3C8EDB00814AB2 /* MovieCapture.swift in Sources */,
 				55308AD12C3C8EDB00814AB2 /* DeviceLookup.swift in Sources */,
-				5550ACA02C1CE371002651AC /* FoundationExtensions.swift in Sources */,
 				5550AC9B2C1CDD85002651AC /* Camera.swift in Sources */,
 				5550ACBD2C1E7256002651AC /* PreviewCameraModel.swift in Sources */,
 				5550ACA52C1CF87A002651AC /* ViewExtensions.swift in Sources */,
-				55308A912C3C8DB200814AB2 /* StatusView.swift in Sources */,
-				55308A922C3C8DB200814AB2 /* CaptureButton.swift in Sources */,
-				55308A932C3C8DB200814AB2 /* MainToolbar.swift in Sources */,
-				55308A942C3C8DB200814AB2 /* DockKitMenu.swift in Sources */,
-				55308A962C3C8DB200814AB2 /* PreviewContainer.swift in Sources */,
-				55308A972C3C8DB200814AB2 /* ZoomView.swift in Sources */,
 				55308A982C3C8DB200814AB2 /* CameraPreview.swift in Sources */,
-				55308A992C3C8DB200814AB2 /* RecordingTimeView.swift in Sources */,
-				55308A9A2C3C8DB200814AB2 /* RegionOfInterestView.swift in Sources */,
-				55308A9B2C3C8DB200814AB2 /* ConnectionView.swift in Sources */,
-				55308A9C2C3C8DB200814AB2 /* ChevronView.swift in Sources */,
-				55308A9D2C3C8DB200814AB2 /* CameraUI.swift in Sources */,
-				55308A9E2C3C8DB200814AB2 /* TrackingSummaryView.swift in Sources */,
-				55308A9F2C3C8DB200814AB2 /* SwitchCameraButton.swift in Sources */,
-				55308AA02C3C8DB200814AB2 /* BatteryView.swift in Sources */,
 				55A595A32C07D1DD001D3AA4 /* DockKit_CameraApp.swift in Sources */,
 				5550AC8E2C1CD362002651AC /* DataTypes.swift in Sources */,
 				29104EFF09B346CBB52FD9B0 /* RobotFaceView.swift in Sources */,
