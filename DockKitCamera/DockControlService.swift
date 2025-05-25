@@ -255,7 +255,9 @@ actor DockControlService {
         
         do {
             animating = true
-            // Disable the system tracking before running an animation.
+            // 保存当前的跟踪模式
+            let previousTrackingMode = trackingMode
+            // 禁用系统跟踪以执行动画
             try await DockAccessoryManager.shared.setSystemTrackingEnabled(false)
             
             // Run the animation and wait for it to finish.
@@ -264,11 +266,14 @@ actor DockControlService {
                 try await Task.sleep(nanoseconds: NSEC_PER_SEC / 10) // 0.1 sec
             }
             
-            // Restore the system tracking after running the animation.
-            try await DockAccessoryManager.shared.setSystemTrackingEnabled(trackingMode == .system ? true : false)
+            // 恢复之前的跟踪模式
+            try await DockAccessoryManager.shared.setSystemTrackingEnabled(previousTrackingMode == .system)
+            // 更新当前跟踪模式
+            trackingMode = previousTrackingMode
         } catch {
             print("Error executing animation \(animation.id) : \(error)")
-            try? await DockAccessoryManager.shared.setSystemTrackingEnabled(trackingMode == .system ? true : false)
+            // 发生错误时也尝试恢复跟踪模式
+            try? await DockAccessoryManager.shared.setSystemTrackingEnabled(trackingMode == .system)
             animating = false
             return false
         }
