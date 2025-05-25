@@ -392,7 +392,7 @@ actor DockControlService {
             case .person(let person):
                 if let rect = await cameraCaptureDelegate?.convertToViewSpace(from: person.rect) {
                     // Create a `DockAccessoryTrackedPerson` object from `TrackingState`.
-                    trackedPersons.append(DockAccessoryTrackedPerson(saliency: person.saliencyRank,
+                    trackedPersons.append(DockAccessoryTrackedPerson(saliency: person.saliencyRank ?? 0,
                                                                      rect: rect,
                                                                      speaking: person.speakingConfidence,
                                                                      looking: person.lookingAtCameraConfidence))
@@ -434,7 +434,7 @@ actor DockControlService {
                     // Subscribe to the asynchronous sequence `batteryStates`.
                     for await batterySummaryState in try dockkitAccessory.batteryStates {
                         // Publish the battery update to the UI.
-                        let batteryLevel = batterySummaryState.batteryLevel ?? 0
+                        let batteryLevel = batterySummaryState.batteryLevel
                         await self.updateBattery(.available(percentage: batteryLevel, charging: batterySummaryState.chargeState == .charging))
                     }
                 } catch {
