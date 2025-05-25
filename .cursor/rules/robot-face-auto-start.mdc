@@ -1,0 +1,61 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Robot Face Auto-Start Implementation
+
+## Overview
+This rule documents the automatic robot face tracking mode implementation that starts during app launch.
+
+## Key Implementation Files
+
+### Main App Startup
+[DockKit_CameraApp.swift](mdc:DockKitCamera/DockKit_CameraApp.swift) contains the modified startup sequence:
+
+```swift
+.task {
+    // Step 1: Set up service delegates
+    await camera.setTrackingServiceDelegate(dockController)
+    await dockController.setCameraCaptureServiceDelegate(camera)
+    
+    // Step 2: Start capture pipeline
+    await camera.start()
+    
+    // Step 3: Wait for initialization
+    try? await Task.sleep(nanoseconds: 500_000_000)
+    
+    // Step 4: Auto-enable robot face mode
+    await dockController.enableRobotFaceMode()
+}
+```
+
+### Core Implementation
+[DockControllerModel.swift](mdc:DockKitCamera/Model/DockControllerModel.swift) contains:
+
+- `enableRobotFaceMode()` - New method for automatic startup
+- `toggleRobotFaceMode()` - Existing manual toggle method
+- `updateRobotEyePositions()` - Eye tracking logic
+
+### Protocol Definition
+[DockAccessoryController.swift](mdc:DockKitCamera/Model/DockAccessoryController.swift) defines the `enableRobotFaceMode()` protocol method.
+
+### Preview Support
+[PreviewDockAccessoryControllerModel.swift](mdc:DockKitCamera/Preview Content/PreviewDockAccessoryControllerModel.swift) provides mock implementation for SwiftUI previews.
+
+## Startup Sequence
+
+1. **Service Delegates Setup**: Establishes communication between camera and dock controller
+2. **Camera Pipeline Start**: Initializes AVCaptureSession with face/body detection
+3. **Initialization Wait**: 0.5 second delay to ensure services are ready
+4. **Auto-Enable Robot Mode**: Switches to front camera and enables face tracking
+
+## Key Features
+
+- **Non-intrusive**: Doesn't affect existing manual controls
+- **Safe**: Includes guard against duplicate enabling
+- **Automatic**: No user intervention required
+- **Logged**: Includes debug logging for troubleshooting
+
+## Related Documentation
+See [ROBOT_FACE_AUTO_START.md](mdc:ROBOT_FACE_AUTO_START.md) for detailed implementation documentation.

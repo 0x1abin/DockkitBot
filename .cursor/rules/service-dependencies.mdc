@@ -1,0 +1,88 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Service Dependencies and Startup Order
+
+## Overview
+This rule documents the critical service dependencies and startup order required for robot face tracking functionality.
+
+## Service Architecture
+
+### Core Services
+1. **Camera Service** - [CameraModel.swift](mdc:DockKitCamera/Model/CameraModel.swift)
+   - Manages AVFoundation capture session
+   - Handles device permissions and configuration
+   - Provides face/body metadata detection
+
+2. **Dock Controller Service** - [DockControllerModel.swift](mdc:DockKitCamera/Model/DockControllerModel.swift)
+   - Manages DockKit accessory communication
+   - Handles robot face state and eye tracking
+   - Controls camera switching and framing
+
+3. **Capture Service** - [CaptureService.swift](mdc:DockKitCamera/CaptureService.swift)
+   - Low-level AVCaptureSession management
+   - Device lookup and configuration
+   - Metadata output processing
+
+4. **Dock Control Service** - [DockControlService.swift](mdc:DockKitCamera/DockControlService.swift)
+   - Direct DockKit API interactions
+   - Accessory event handling
+   - Battery and tracking state management
+
+## Required Startup Order
+
+### Phase 1: Service Creation
+Services are created during app initialization in [DockKit_CameraApp.swift](mdc:DockKitCamera/DockKit_CameraApp.swift):
+```swift
+@State private var camera = CameraModel()
+@State private var dockController = DockControllerModel()
+```
+
+### Phase 2: Delegate Setup
+Communication bridges established:
+```swift
+await camera.setTrackingServiceDelegate(dockController)
+await dockController.setCameraCaptureServiceDelegate(camera)
+```
+
+### Phase 3: Core Service Start
+Camera pipeline initialization:
+```swift
+await camera.start()
+```
+
+This triggers:
+- Permission verification
+- Device lookup and configuration
+- AVCaptureSession setup
+- Metadata detection configuration
+
+### Phase 4: Robot Mode Activation
+After services are ready:
+```swift
+await dockController.enableRobotFaceMode()
+```
+
+## Critical Dependencies
+
+### Camera → DockController
+- Camera provides face detection metadata
+- DockController processes tracking data
+- Implemented via `DockAccessoryTrackingDelegate`
+
+### DockController → Camera  
+- DockController controls camera switching
+- Robot mode requires front camera
+- Implemented via `CameraCaptureDelegate`
+
+### Service Timing
+- 0.5 second delay ensures full initialization
+- Prevents race conditions during startup
+- Allows metadata detection to be ready
+
+## Error Handling
+- Permission failures prevent camera start
+- Missing delegates are safely handled
+- Robot mode includes duplicate-enable protection
