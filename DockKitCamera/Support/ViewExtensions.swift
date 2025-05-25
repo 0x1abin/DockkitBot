@@ -1,12 +1,14 @@
 /*
-See the LICENSE.txt file for this sample’s licensing information.
+See the LICENSE.txt file for this sample's licensing information.
 
 Abstract:
 Extensions and supporting SwiftUI types.
 */
 
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#endif
 
 let largeButtonSize = CGSize(width: 64, height: 64)
 let smallButtonSize = CGSize(width: 32, height: 32)
@@ -55,6 +57,38 @@ extension View {
 
 extension Image {
     init(_ image: CGImage) {
+        #if canImport(UIKit)
         self.init(uiImage: UIImage(cgImage: image))
+        #else
+        self.init(decorative: image, scale: 1.0)
+        #endif
+    }
+}
+
+// MARK: - Screen Wake Lock
+struct KeepScreenAwake: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                // 应用启动时设置屏幕常亮
+                setIdleTimerDisabled(true)
+            }
+            .onDisappear {
+                // 应用退出时恢复系统默认锁屏行为
+                setIdleTimerDisabled(false)
+            }
+    }
+    
+    private func setIdleTimerDisabled(_ disabled: Bool) {
+        #if canImport(UIKit)
+        UIApplication.shared.isIdleTimerDisabled = disabled
+        #endif
+    }
+}
+
+extension View {
+    /// 保持屏幕常亮
+    func keepScreenAwake() -> some View {
+        modifier(KeepScreenAwake())
     }
 }

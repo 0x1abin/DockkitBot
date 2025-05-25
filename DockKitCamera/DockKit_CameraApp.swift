@@ -18,6 +18,7 @@ struct DockKitCameraApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView(camera: camera, dockController: dockController)
+                .keepScreenAwake() // 保持屏幕常亮
                 .task {
                     // Step 1: Set up service delegates for communication between camera and dock controller
                     await camera.setTrackingServiceDelegate(dockController)
