@@ -395,34 +395,73 @@ struct RobotFaceView: View {
         }
     }
     
-    /// 根据情绪获取眨眼间隔
+    /// 根据情绪获取眨眼间隔（增强随机性和降低频率）
     private func getBlinkIntervalForMood() -> Double {
+        // 添加额外的随机因子来增加不可预测性
+        let randomVariation = Double.random(in: 0.8...1.3)
+        let baseInterval: Double
+        
         switch robotFaceState.mood {
         case .sleepy:
-            // 困倦：眨眼频率较低，2-4秒
-            return Double.random(in: 2.0...4.0)
+            // 困倦：眨眼频率很低，4-8秒，偶尔会更长
+            baseInterval = Double.random(in: 4.0...8.0)
+            // 20%概率有超长间隔
+            if Double.random(in: 0...1) < 0.2 {
+                return baseInterval * Double.random(in: 1.5...2.5) * randomVariation
+            }
+            
         case .surprise, .fear:
-            // 惊讶/恐惧：眨眼频率很高，0.5-1.5秒
-            return Double.random(in: 0.5...1.5)
+            // 惊讶/恐惧：眨眼频率较高但不规律，1.5-4.0秒
+            baseInterval = Double.random(in: 1.5...4.0)
+            // 30%概率有快速连续眨眼
+            if Double.random(in: 0...1) < 0.3 {
+                return Double.random(in: 0.3...1.0) * randomVariation
+            }
+            
         case .excited, .joy, .happy:
-            // 兴奋/开心：眨眼频率较高，1.5-2.5秒
-            return Double.random(in: 1.5...2.5)
+            // 兴奋/开心：眨眼频率中等，3.0-6.0秒
+            baseInterval = Double.random(in: 3.0...6.0)
+            
         case .sadness, .sad:
-            // 悲伤：眨眼频率较低，2.5-4.0秒
-            return Double.random(in: 2.5...4.0)
+            // 悲伤：眨眼频率低，5.0-9.0秒
+            baseInterval = Double.random(in: 5.0...9.0)
+            // 15%概率有非常长的停顿
+            if Double.random(in: 0...1) < 0.15 {
+                return baseInterval * Double.random(in: 1.8...3.0) * randomVariation
+            }
+            
         case .anger:
-            // 愤怒：眨眼频率中等但不规律，1.0-3.0秒
-            return Double.random(in: 1.0...3.0)
+            // 愤怒：眨眼频率不规律，2.0-7.0秒，变化很大
+            baseInterval = Double.random(in: 2.0...7.0)
+            // 25%概率有突然的长停顿或短停顿
+            if Double.random(in: 0...1) < 0.25 {
+                let extremeVariation = Bool.random() ? Double.random(in: 0.5...1.0) : Double.random(in: 2.0...3.5)
+                return baseInterval * extremeVariation * randomVariation
+            }
+            
         case .love:
-            // 爱恋：可能有连续眨眼，1.5-2.8秒
-            return Double.random(in: 1.5...2.8)
+            // 爱恋：眨眼频率中等，3.5-6.5秒，偶尔有温柔的连续眨眼
+            baseInterval = Double.random(in: 3.5...6.5)
+            // 20%概率有温柔的短间隔
+            if Double.random(in: 0...1) < 0.2 {
+                return Double.random(in: 1.8...3.0) * randomVariation
+            }
+            
         case .curiosity:
-            // 好奇：眨眼频率中等，2.0-3.5秒
-            return Double.random(in: 2.0...3.5)
+            // 好奇：眨眼频率中等，3.0-5.5秒
+            baseInterval = Double.random(in: 3.0...5.5)
+            
         default:
-            // 正常状态：模拟人类平均眨眼频率 (每分钟15-20次，即3-4秒)
-            return Double.random(in: 2.8...4.2)
+            // 正常状态：模拟人类自然眨眼频率 (4-7秒，更接近真实)
+            baseInterval = Double.random(in: 4.0...7.0)
+            // 10%概率有更长的沉思间隔
+            if Double.random(in: 0...1) < 0.1 {
+                return baseInterval * Double.random(in: 1.5...2.2) * randomVariation
+            }
         }
+        
+        // 应用随机变化因子
+        return baseInterval * randomVariation
     }
     
     /// 执行自然眨眼
