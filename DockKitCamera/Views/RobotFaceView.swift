@@ -40,6 +40,9 @@ struct RobotFaceView: View {
     @State private var moodAnimator = MoodAnimationController()
     @State private var motorExecutor = FastMotorActionExecutor()  // 使用新的快速电机系统
     
+    // 表情恢复定时器管理
+    @State private var moodRestoreTimer: DispatchWorkItem?
+    
     private let allMoods: [RobotMood] = RobotMood.allCases
     
     var body: some View {
@@ -172,12 +175,10 @@ struct RobotFaceView: View {
             
             // 设置电机动作完成后的回调
             motorExecutor.onActionCompleted = {
-                // 在手动模式下，表情动作执行结束后恢复到正常表情
+                // 在手动模式下，表情动作执行结束后延迟3秒再恢复到正常表情
                 if robotFaceState.isManualMoodMode {
-                    print("🔄 电机动作完成，恢复到正常表情")
-                    withAnimation(.easeInOut(duration: 0.5)) {
-                        robotFaceState.mood = .normal
-                    }
+                    print("🔄 电机动作完成，将在3秒后恢复到正常表情")
+                    scheduleMoodRestore()
                 }
             }
         }
@@ -186,6 +187,7 @@ struct RobotFaceView: View {
             stopRandomMoodMode()
             stopBlinking()
             moodAnimator.stopAnimations()
+            cancelMoodRestore()
         }
         .onChange(of: robotFaceState.mood) { oldValue, newValue in
             print("🎭 表情变化: \(oldValue) -> \(newValue)")
@@ -612,6 +614,9 @@ struct RobotFaceView: View {
     private func cycleThroughMoods() {
         print("🎯 开始切换表情，当前索引: \(currentMoodIndex)，当前表情: \(robotFaceState.mood)")
         
+        // 取消之前的表情恢复定时器
+        cancelMoodRestore()
+        
         isManualMoodMode = true
         robotFaceState.isManualMoodMode = true
         
@@ -693,6 +698,34 @@ struct RobotFaceView: View {
         randomMoodTimer?.invalidate()
         randomMoodTimer = nil
         isManualMoodMode = true
+    }
+    
+    // MARK: - Mood Restore Management
+    
+    /// 调度表情恢复（3秒后恢复到正常表情）
+    private func scheduleMoodRestore() {
+        // 取消之前的任务
+        cancelMoodRestore()
+        
+        // 创建新的恢复任务
+        let workItem = DispatchWorkItem {
+            // 确保仍然在手动模式才执行恢复
+            if self.robotFaceState.isManualMoodMode {
+                print("🔄 3秒后恢复到正常表情")
+                withAnimation(.easeInOut(duration: 0.5)) {
+                    self.robotFaceState.mood = .normal
+                }
+            }
+        }
+        
+        moodRestoreTimer = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0, execute: workItem)
+    }
+    
+    /// 取消表情恢复定时器
+    private func cancelMoodRestore() {
+        moodRestoreTimer?.cancel()
+        moodRestoreTimer = nil
     }
     
     // MARK: - Motor Actions
