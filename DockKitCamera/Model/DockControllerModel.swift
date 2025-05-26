@@ -190,9 +190,9 @@ final class DockControllerModel: DockController {
                     if orientation == .landscapeLeft || orientation == .landscapeRight {
                         // Create a new person with adjusted rect instead of modifying the existing one
                         let adjustedRect = CGRect(x: person.rect.origin.x,
-                                                y: person.rect.origin.y,
-                                                width: person.rect.height,
-                                                height: person.rect.width)
+                                             y: person.rect.origin.y,
+                                             width: person.rect.height,
+                                             height: person.rect.width)
                         let adjustedPerson = DockAccessoryTrackedPerson(
                             saliency: person.saliency,
                             rect: adjustedRect,
@@ -235,16 +235,36 @@ final class DockControllerModel: DockController {
             // 注意：faceCenter坐标系原点在左上角，值域[0,1]
             // 眼睛坐标系中 (0.5, 0.5) 是中心位置
             
-            // X轴：直接使用人脸的X坐标（不反转）
-            // 当人脸在屏幕左侧时，眼睛应该看左边
-            // 当人脸在屏幕右侧时，眼睛应该看右边
-            let rawEyeX = faceCenter.x
+#if canImport(UIKit)
+            // 检测设备方向
+            let orientation = UIDevice.current.orientation
+            let isPortrait = orientation == .portrait || orientation == .portraitUpsideDown
             
-            // Y轴：反转Y坐标以获得自然的跟随效果
-            // 当人脸在屏幕上方时(faceCenter.y < 0.5)，眼睛应该看上方(eyeY < 0.5)
-            // 当人脸在屏幕下方时(faceCenter.y > 0.5)，眼睛应该看下方(eyeY > 0.5)
-            // 由于原始坐标系可能不符合这个预期，我们反转Y轴
+            let rawEyeX: CGFloat
+            let rawEyeY: CGFloat
+            
+            if isPortrait {
+                // 竖屏状态下：交换 X 和 Y 坐标
+                // 原来的 X 变成 Y，原来的 Y 变成 X
+                rawEyeX = 1.0 - faceCenter.y  // Y轴反转后变成X
+                rawEyeY = faceCenter.x        // X轴直接变成Y
+            } else {
+                // 横屏状态下：保持原来的逻辑
+                // X轴：直接使用人脸的X坐标（不反转）
+                // 当人脸在屏幕左侧时，眼睛应该看左边
+                // 当人脸在屏幕右侧时，眼睛应该看右边
+                rawEyeX = faceCenter.x
+                
+                // Y轴：反转Y坐标以获得自然的跟随效果
+                // 当人脸在屏幕上方时(faceCenter.y < 0.5)，眼睛应该看上方(eyeY < 0.5)
+                // 当人脸在屏幕下方时(faceCenter.y > 0.5)，眼睛应该看下方(eyeY > 0.5)
+                rawEyeY = 1.0 - faceCenter.y
+            }
+#else
+            // 非UIKit环境（如macOS）保持原来的逻辑
+            let rawEyeX = faceCenter.x
             let rawEyeY = 1.0 - faceCenter.y
+#endif
             
             // 应用合理的范围约束
             let constrainedX = max(0.1, min(0.9, rawEyeX))

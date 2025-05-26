@@ -388,28 +388,28 @@ actor DockControlService {
             return
         }
         
-        self.lastTrackingSummary = trackingSummaryState
-        
-        var trackedPersons: [DockAccessoryTrackedPerson] = []
-        for subject in trackingSummaryState.trackedSubjects {
-            // Save the tracking state for all subjects that are people.
-            switch subject {
-            case .person(let person):
-                if let rect = await cameraCaptureDelegate?.convertToViewSpace(from: person.rect) {
-                    // Create a `DockAccessoryTrackedPerson` object from `TrackingState`.
+                        self.lastTrackingSummary = trackingSummaryState
+                        
+                        var trackedPersons: [DockAccessoryTrackedPerson] = []
+                        for subject in trackingSummaryState.trackedSubjects {
+                            // Save the tracking state for all subjects that are people.
+                            switch subject {
+                            case .person(let person):
+                                if let rect = await cameraCaptureDelegate?.convertToViewSpace(from: person.rect) {
+                                    // Create a `DockAccessoryTrackedPerson` object from `TrackingState`.
                     trackedPersons.append(DockAccessoryTrackedPerson(saliency: person.saliencyRank ?? 0,
-                                                                     rect: rect,
-                                                                     speaking: person.speakingConfidence,
-                                                                     looking: person.lookingAtCameraConfidence))
-                    print("pos: \(person.rect.minX) \(person.rect.minY)")
-                }
-            default:
-                // Do nothing.
-                break
-            }
-        }
-        
-        self.trackedPersons = trackedPersons
+                                                                                     rect: rect,
+                                                                                     speaking: person.speakingConfidence,
+                                                                                     looking: person.lookingAtCameraConfidence))
+                                    print("pos: \(person.rect.minX) \(person.rect.minY)")
+                                }
+                            default:
+                                // Do nothing.
+                                break
+                            }
+                        }
+                        
+                        self.trackedPersons = trackedPersons
 #endif
     }
     

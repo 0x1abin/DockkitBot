@@ -15,7 +15,7 @@ struct ContentView<CameraModel: Camera, DockControllerModel: DockController>: Vi
     var body: some View {
         ZStack {
             // Always show robot face view - this is a robot face tracking app
-            RobotFaceView(robotFaceState: dockController.robotFaceState, dockController: dockController)
+                RobotFaceView(robotFaceState: dockController.robotFaceState, dockController: dockController)
             
             // Keep camera preview running in background but completely hidden
             CameraPreview(source: camera.previewSource)
@@ -23,7 +23,7 @@ struct ContentView<CameraModel: Camera, DockControllerModel: DockController>: Vi
                 .opacity(0)
                 .allowsHitTesting(false)
                 .hidden()
-        }
+                        }
         .ignoresSafeArea(.all)
         .statusBarHidden(true)
         .persistentSystemOverlays(.hidden)

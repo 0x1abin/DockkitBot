@@ -209,13 +209,13 @@ actor CaptureService: NSObject {
     func updateMagnification(for zoomType: CameraZoomType, by scale: Double = 0.2) {
         do {
             try currentDevice.lockForConfiguration()
-            let magnification = (zoomType == .increase ? 1.0 : -1.0) * scale
-            var newZoomFactor = currentDevice.videoZoomFactor + magnification
-            newZoomFactor = max(min(newZoomFactor, self.maxZoomFactor), self.minZoomFactor)
-            newZoomFactor = Double(round(10 * newZoomFactor) / 10)
-            currentDevice.videoZoomFactor = newZoomFactor
-            currentDevice.unlockForConfiguration()
-            self.zoomFactor = newZoomFactor
+        let magnification = (zoomType == .increase ? 1.0 : -1.0) * scale
+        var newZoomFactor = currentDevice.videoZoomFactor + magnification
+        newZoomFactor = max(min(newZoomFactor, self.maxZoomFactor), self.minZoomFactor)
+        newZoomFactor = Double(round(10 * newZoomFactor) / 10)
+        currentDevice.videoZoomFactor = newZoomFactor
+        currentDevice.unlockForConfiguration()
+        self.zoomFactor = newZoomFactor
         } catch {
             print("Failed to update zoom factor: \(error)")
         }
