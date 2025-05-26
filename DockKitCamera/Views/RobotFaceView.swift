@@ -184,6 +184,7 @@ struct RobotFaceView: View {
         .onDisappear {
             // 清理定时器
             stopRandomMoodMode()
+            stopBlinking()
             moodAnimator.stopAnimations()
         }
         .onChange(of: robotFaceState.mood) { oldValue, newValue in
@@ -369,20 +370,202 @@ struct RobotFaceView: View {
             )
     }
     
-    // MARK: - LED Blinking
+    // MARK: - Natural LED Blinking System
     
+    // 眨眼状态管理
+    @State private var blinkTimer: Timer?
+    @State private var isInDoubleBlink = false
+    @State private var consecutiveBlinkCount = 0
+    
+    /// 启动自然眨眼系统
     private func startLEDBlinking() {
-        Timer.scheduledTimer(withTimeInterval: Double.random(in: 3.0...5.0), repeats: true) { _ in
-            withAnimation(.easeInOut(duration: 0.12)) {
-                robotFaceState.isBlinking = true
-            }
+        scheduleNextBlink()
+    }
+    
+    /// 调度下一次眨眼
+    private func scheduleNextBlink() {
+        // 清除现有定时器
+        blinkTimer?.invalidate()
+        
+        // 根据情绪调整眨眼间隔
+        let blinkInterval = getBlinkIntervalForMood()
+        
+        blinkTimer = Timer.scheduledTimer(withTimeInterval: blinkInterval, repeats: false) { _ in
+            self.performNaturalBlink()
+        }
+    }
+    
+    /// 根据情绪获取眨眼间隔
+    private func getBlinkIntervalForMood() -> Double {
+        switch robotFaceState.mood {
+        case .sleepy:
+            // 困倦：眨眼频率较低，2-4秒
+            return Double.random(in: 2.0...4.0)
+        case .surprise, .fear:
+            // 惊讶/恐惧：眨眼频率很高，0.5-1.5秒
+            return Double.random(in: 0.5...1.5)
+        case .excited, .joy, .happy:
+            // 兴奋/开心：眨眼频率较高，1.5-2.5秒
+            return Double.random(in: 1.5...2.5)
+        case .sadness, .sad:
+            // 悲伤：眨眼频率较低，2.5-4.0秒
+            return Double.random(in: 2.5...4.0)
+        case .anger:
+            // 愤怒：眨眼频率中等但不规律，1.0-3.0秒
+            return Double.random(in: 1.0...3.0)
+        case .love:
+            // 爱恋：可能有连续眨眼，1.5-2.8秒
+            return Double.random(in: 1.5...2.8)
+        case .curiosity:
+            // 好奇：眨眼频率中等，2.0-3.5秒
+            return Double.random(in: 2.0...3.5)
+        default:
+            // 正常状态：模拟人类平均眨眼频率 (每分钟15-20次，即3-4秒)
+            return Double.random(in: 2.8...4.2)
+        }
+    }
+    
+    /// 执行自然眨眼
+    private func performNaturalBlink() {
+        // 决定眨眼类型
+        let blinkType = determineBlinkType()
+        
+        switch blinkType {
+        case .normal:
+            performSingleBlink(duration: Double.random(in: 0.15...0.25))
+        case .quick:
+            performSingleBlink(duration: Double.random(in: 0.08...0.12))
+        case .slow:
+            performSingleBlink(duration: Double.random(in: 0.3...0.5))
+        case .double:
+            performDoubleBlink()
+        case .triple:
+            performTripleBlink()
+        }
+        
+        // 调度下一次眨眼
+        scheduleNextBlink()
+    }
+    
+    /// 确定眨眼类型
+    private func determineBlinkType() -> BlinkType {
+        // 基于情绪和随机因素决定眨眼类型
+        switch robotFaceState.mood {
+        case .sleepy:
+            // 困倦时多为缓慢眨眼
+            let rand = Double.random(in: 0...1)
+            if rand < 0.7 { return .slow }
+            else if rand < 0.9 { return .normal }
+            else { return .double }
             
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-                withAnimation(.easeInOut(duration: 0.12)) {
-                    robotFaceState.isBlinking = false
+        case .surprise, .fear:
+            // 惊讶/恐惧时多为快速眨眼
+            let rand = Double.random(in: 0...1)
+            if rand < 0.6 { return .quick }
+            else if rand < 0.85 { return .normal }
+            else { return .double }
+            
+        case .love:
+            // 爱恋时可能有连续眨眼
+            let rand = Double.random(in: 0...1)
+            if rand < 0.3 { return .double }
+            else if rand < 0.4 { return .triple }
+            else if rand < 0.8 { return .normal }
+            else { return .slow }
+            
+        case .excited, .joy, .happy:
+            // 兴奋/开心时眨眼较活跃
+            let rand = Double.random(in: 0...1)
+            if rand < 0.5 { return .normal }
+            else if rand < 0.7 { return .quick }
+            else if rand < 0.85 { return .double }
+            else { return .triple }
+            
+        case .anger:
+            // 愤怒时眨眼较少，主要是正常或快速
+            let rand = Double.random(in: 0...1)
+            if rand < 0.7 { return .normal }
+            else if rand < 0.9 { return .quick }
+            else { return .slow }
+            
+        default:
+            // 正常状态的自然分布
+            let rand = Double.random(in: 0...1)
+            if rand < 0.75 { return .normal }
+            else if rand < 0.85 { return .quick }
+            else if rand < 0.93 { return .slow }
+            else if rand < 0.98 { return .double }
+            else { return .triple }
+        }
+    }
+    
+    /// 执行单次眨眼
+    private func performSingleBlink(duration: Double) {
+        let openDuration = duration * 0.4  // 闭眼时间
+        let closeDuration = duration * 0.6  // 睁眼时间
+        
+        // 闭眼
+        withAnimation(.easeIn(duration: openDuration)) {
+            robotFaceState.isBlinking = true
+        }
+        
+        // 睁眼
+        DispatchQueue.main.asyncAfter(deadline: .now() + openDuration) {
+            withAnimation(.easeOut(duration: closeDuration)) {
+                self.robotFaceState.isBlinking = false
+            }
+        }
+    }
+    
+    /// 执行双重眨眼
+    private func performDoubleBlink() {
+        isInDoubleBlink = true
+        
+        // 第一次眨眼
+        performSingleBlink(duration: 0.15)
+        
+        // 第二次眨眼 (延迟0.25秒)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            self.performSingleBlink(duration: 0.15)
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                self.isInDoubleBlink = false
+            }
+        }
+    }
+    
+    /// 执行三重眨眼
+    private func performTripleBlink() {
+        consecutiveBlinkCount = 0
+        
+        // 执行三次快速眨眼
+        for i in 0..<3 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.2) {
+                self.performSingleBlink(duration: 0.12)
+                self.consecutiveBlinkCount += 1
+                
+                if self.consecutiveBlinkCount >= 3 {
+                    self.consecutiveBlinkCount = 0
                 }
             }
         }
+    }
+    
+    /// 停止眨眼系统
+    private func stopBlinking() {
+        blinkTimer?.invalidate()
+        blinkTimer = nil
+        isInDoubleBlink = false
+        consecutiveBlinkCount = 0
+    }
+    
+    /// 眨眼类型枚举
+    private enum BlinkType {
+        case normal    // 正常眨眼 (0.15-0.25秒)
+        case quick     // 快速眨眼 (0.08-0.12秒)
+        case slow      // 缓慢眨眼 (0.3-0.5秒)
+        case double    // 双重眨眼
+        case triple    // 三重眨眼
     }
     
     // MARK: - Mood Cycling
