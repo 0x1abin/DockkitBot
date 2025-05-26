@@ -1,0 +1,192 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# DockKitBot - AI 智能陪伴机器人开发指南
+
+## 项目概述
+DockKitBot 是一个基于 DockKit 硬件的 AI 智能陪伴机器人应用。通过人脸跟踪、表情识别和物理动作控制，为用户提供情感交互体验。
+
+### 核心特性
+- 🤖 **智能陪伴** - 基于 DockKit 硬件的物理机器人交互
+- 👁️ **人脸跟踪** - 实时检测和跟随用户面部
+- 😊 **表情系统** - 20+ 种情绪表达和动画
+- 🔄 **物理动作** - 点头、摇头、倾斜等自然动作
+- 📱 **屏幕常亮** - 持续的视觉交互体验
+
+### 未来发展路线图
+- 🎤 **语音交互** - 集成语音识别和合成技术
+- 🧠 **多模态大模型** - 接入视觉和语言理解模型
+- 💬 **AI 情感交互** - 基于情感分析的智能对话
+- 🎯 **个性化学习** - 适应用户偏好和行为模式
+
+## 核心文件结构
+
+### 设计文档
+- [设计文档](DockkitBot-Design.md)
+
+### 主要组件
+- [DockKit_CameraApp.swift](mdc:DockKitCamera/DockKit_CameraApp.swift) - 应用入口，配置屏幕常亮
+- [ContentView.swift](mdc:DockKitCamera/ContentView.swift) - 主视图，机器人交互界面
+- [RobotFaceView.swift](mdc:DockKitCamera/Views/RobotFaceView.swift) - 机器人脸部表情系统
+
+### 核心服务
+- [CameraModel.swift](mdc:DockKitCamera/Model/CameraModel.swift) - 视觉感知和人脸检测
+- [DockControllerModel.swift](mdc:DockKitCamera/Model/DockControllerModel.swift) - 机器人控制器
+- [DockControlService.swift](mdc:DockKitCamera/DockControlService.swift) - DockKit 硬件控制
+- [CaptureService.swift](mdc:DockKitCamera/CaptureService.swift) - 视觉输入处理
+
+### 表情和动作系统
+- [MoodAnimations.swift](mdc:DockKitCamera/Views/MoodAnimations.swift) - 情绪动画库
+- [MotorActions.swift](mdc:DockKitCamera/Views/MotorActions.swift) - 物理动作控制
+- [VerticalLEDEyeView.swift](mdc:DockKitCamera/Views/VerticalLEDEyeView.swift) - LED 眼部表情
+
+### 数据类型
+- [DataTypes.swift](mdc:DockKitCamera/Model/DataTypes.swift) - 机器人状态和交互类型定义
+
+## 关键类型定义
+
+### 机器人状态类型
+```swift
+enum DockAccessoryStatus {
+    case disconnected    // 机器人离线
+    case connected      // 机器人在线
+    case connectedTracking  // 机器人跟踪中
+}
+
+enum DockAccessoryBatteryStatus {
+    case unavailable
+    case available(percentage: Double, charging: Bool)
+}
+
+struct DockAccessoryTrackedPerson {
+    let saliency: Int      // 用户重要性评分
+    let rect: CGRect       // 用户位置
+    let speaking: Double   // 说话置信度（未来语音交互）
+    let looking: Double    // 注视置信度（情感分析）
+}
+```
+
+### 交互控制类型
+```swift
+enum TrackingMode { 
+    case system    // 自动跟踪模式
+    case custom    // 自定义交互模式
+    case manual    // 手动控制模式
+}
+
+enum RobotMood {
+    case happy, sad, excited, calm, curious, sleepy
+    // 支持 Plutchik 情绪轮的完整情绪谱系
+}
+
+enum Animation { 
+    case yes, nope, wakeup, kapow
+    // 未来扩展：greeting, thinking, listening
+}
+```
+
+### AI 交互协议（未来扩展）
+```swift
+protocol AIInteractionDelegate: AnyObject {
+    func processVoiceInput(_ audio: Data) async -> String
+    func generateEmotionalResponse(_ context: InteractionContext) async -> RobotMood
+    func updatePersonalityModel(_ userBehavior: UserBehavior) async
+}
+
+protocol VisionModelDelegate: AnyObject {
+    func analyzeUserEmotion(_ faceData: FaceMetadata) async -> EmotionAnalysis
+    func detectUserIntent(_ visualContext: VisualContext) async -> UserIntent
+}
+```
+
+## 核心功能架构
+
+### 当前实现
+1. **视觉感知** - 使用 AVFoundation 进行人脸检测
+2. **物理交互** - DockKit 硬件控制和动作执行
+3. **表情系统** - 丰富的情绪表达和颜色主题
+4. **跟踪恢复** - 动画完成后自动恢复人脸跟踪
+
+### 未来 AI 集成架构
+```
+用户交互输入 → 多模态感知层 → AI 理解层 → 情感决策层 → 机器人响应输出
+     ↓              ↓            ↓          ↓            ↓
+  视觉+语音 → 视觉/语音模型 → 大语言模型 → 情感引擎 → 表情+动作+语音
+```
+
+## 编码规范
+
+### 当前最佳实践
+- 使用 `??` 提供默认值：`person.saliencyRank ?? 0`
+- 异步操作使用 `async/await`
+- 表情动画后恢复跟踪模式
+- 屏幕常亮保持交互连续性
+
+### AI 集成准备
+```swift
+// 为未来 AI 功能预留接口
+protocol AICapabilities {
+    func processMultimodalInput(_ input: MultimodalInput) async -> AIResponse
+    func updateEmotionalState(_ context: EmotionalContext) async
+    func generatePersonalizedResponse(_ user: UserProfile) async -> InteractionResponse
+}
+```
+
+### 屏幕常亮实现
+```swift
+// 确保持续的陪伴体验
+extension View {
+    func keepScreenAwake() -> some View {
+        modifier(KeepScreenAwake())
+    }
+}
+```
+
+## 数据流架构
+
+### 当前架构
+```
+人脸检测 → 视觉处理 → 机器人控制 → 物理动作
+     ↓         ↓          ↓          ↓
+  用户感知 → 状态分析 → 情绪决策 → 表情响应
+```
+
+### 未来 AI 架构
+```
+多模态输入 → AI 感知层 → 情感理解 → 个性化响应 → 多维度输出
+(视觉+语音) → (视觉+语言模型) → (情感分析) → (个性化引擎) → (表情+动作+语音)
+```
+
+## 开发路线图
+
+### Phase 1: 当前功能 ✅
+- 基础人脸跟踪和表情系统
+- DockKit 硬件集成
+- 物理动作控制
+
+### Phase 2: 语音集成 🚧
+- 语音识别和合成
+- 语音情感分析
+- 多模态交互界面
+
+### Phase 3: AI 大模型集成 🔮
+- 视觉理解模型
+- 大语言模型对话
+- 情感智能引擎
+
+### Phase 4: 个性化陪伴 🌟
+- 用户行为学习
+- 个性化交互模式
+- 长期记忆和关系建立
+
+## 技术配置
+- **应用名称**: DockKitBot
+- **Bundle ID**: `com.example.apple-samplecode.DockKitCamera86K252GRMM`
+- **最低版本**: iOS 18.0+
+- **硬件要求**: DockKit 兼容配件
+- **未来扩展**: Core ML, Speech Framework, AVSpeechSynthesis
+
+## 愿景声明
+DockKitBot 致力于创造下一代智能陪伴体验，通过物理机器人、AI 大模型和情感计算的融合，为用户提供真正有温度的数字伴侣。
