@@ -98,10 +98,12 @@ class MoodAnimationController {
             }
             
         case .love:
-            // 爱恋状态：心跳效果
-            withAnimation(.easeInOut(duration: 0.8)) {
-                scaleEffect = scaleEffect > 1.0 ? 1.0 : 1.15
-                ledBrightness = ledBrightness > 1.0 ? 0.9 : 1.2
+            // 爱恋状态：强烈心跳效果
+            withAnimation(.easeInOut(duration: 0.6)) {
+                scaleEffect = scaleEffect > 1.0 ? 1.0 : 1.4  // 更大的心跳幅度
+                ledBrightness = ledBrightness > 1.0 ? 0.8 : 1.5  // 更强的亮度变化
+                ledGlow = ledGlow > 0.8 ? 0.6 : 1.3  // 添加发光效果
+                colorShift = colorShift > 0.5 ? 0.2 : 0.9  // 粉色心跳
             }
             
         case .curiosity:
@@ -172,6 +174,21 @@ class MoodAnimationController {
                 specialAnimationOffset = sin(time * 0.8) * 1.5
             }
             
+        case .love:
+            // 爱恋状态：持续的心跳律动
+            let time = Date().timeIntervalSince1970
+            let heartbeatRate = 1.2  // 心跳频率
+            let heartbeat = sin(time * heartbeatRate)
+            
+            withAnimation(.linear(duration: 0.1)) {
+                // 双重心跳效果 (lub-dub)
+                let doubleBeat = sin(time * heartbeatRate * 2) * 0.3 + heartbeat * 0.7
+                scaleEffect = 1.0 + doubleBeat * 0.25  // 持续的缩放心跳
+                ledBrightness = 1.0 + doubleBeat * 0.3  // 亮度心跳
+                ledGlow = 0.8 + abs(doubleBeat) * 0.4  // 发光心跳
+                colorShift = 0.5 + doubleBeat * 0.3  // 粉色强度变化
+            }
+            
         default:
             break
         }
@@ -227,17 +244,36 @@ class MoodAnimationController {
             }
             
         case .love:
-            // 爱恋时的心跳动画
-            for i in 0..<3 {
-                DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.6) {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
-                        self.scaleEffect = 1.3
-                        self.colorShift = 1.0
+            // 爱恋时的壮观心跳动画序列
+            for i in 0..<5 {  // 增加到5次心跳
+                DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.8) {
+                    // 第一阶段：强烈放大
+                    withAnimation(.spring(response: 0.25, dampingFraction: 0.4)) {
+                        self.scaleEffect = 1.6  // 更大的放大效果
+                        self.colorShift = 1.0   // 完全粉色
+                        self.ledBrightness = 1.8  // 超亮
+                        self.ledGlow = 1.5      // 强发光
                     }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                            self.scaleEffect = 1.0
-                            self.colorShift = 0.0
+                    
+                    // 第二阶段：快速回缩但保持温暖
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.6)) {
+                            self.scaleEffect = 1.1   // 稍微保持放大
+                            self.colorShift = 0.6    // 保持粉色调
+                            self.ledBrightness = 1.2
+                            self.ledGlow = 1.0
+                        }
+                    }
+                    
+                    // 第三阶段：温柔回到正常（最后一次心跳后）
+                    if i == 4 {  // 最后一次心跳
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                            withAnimation(.easeInOut(duration: 1.0)) {
+                                self.scaleEffect = 1.0
+                                self.colorShift = 0.3  // 保留淡淡的粉色
+                                self.ledBrightness = 1.0
+                                self.ledGlow = 0.8
+                            }
                         }
                     }
                 }

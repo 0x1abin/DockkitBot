@@ -210,11 +210,35 @@ struct VerticalLEDEyeView: View {
                 .blur(radius: 2)
                 
         case .love:
-            // 爱心：心形光点
-            Image(systemName: "heart.fill")
-                .font(.system(size: 8))
-                .foregroundColor(.white.opacity(0.7))
-                .scaleEffect(ledBrightness)
+            // 爱心：大大的心形显示
+            ZStack {
+                // 主要爱心
+                Image(systemName: "heart.fill")
+                    .font(.system(size: min(eyeWidth, eyeHeight) * 0.6))  // 根据眼睛大小调整
+                    .foregroundColor(Color.pink.opacity(0.9))
+                    .scaleEffect(ledBrightness)
+                    .shadow(color: Color.pink, radius: 8, x: 0, y: 0)
+                
+                // 内部光亮爱心
+                Image(systemName: "heart.fill")
+                    .font(.system(size: min(eyeWidth, eyeHeight) * 0.4))
+                    .foregroundColor(Color.white.opacity(0.8))
+                    .scaleEffect(ledBrightness * 0.8)
+                    .blur(radius: 1)
+                
+                // 闪烁的小爱心装饰
+                ForEach(0..<3, id: \.self) { index in
+                    Image(systemName: "heart.fill")
+                        .font(.system(size: 3))
+                        .foregroundColor(Color.pink.opacity(0.6))
+                        .scaleEffect(ledBrightness * Double.random(in: 0.5...1.2))
+                        .offset(
+                            x: CGFloat([-8, 0, 8][index]),
+                            y: CGFloat([-6, 8, -6][index])
+                        )
+                        .opacity(Double.random(in: 0.3...0.8))
+                }
+            }
                 
         case .anger:
             // 愤怒：锯齿边缘
@@ -243,6 +267,7 @@ struct VerticalLEDEyeView: View {
         case .fear: return 0.8
         case .sleepy: return 0.6
         case .anger: return 1.1
+        case .love: return 1.3  // 爱恋时眼睛更宽
         default: return 1.0
         }
     }
@@ -253,6 +278,7 @@ struct VerticalLEDEyeView: View {
         case .fear: return 0.9
         case .sleepy: return 0.7
         case .excited, .joy: return 1.2
+        case .love: return 1.4  // 爱恋时眼睛更高，更像心形
         default: return 1.0
         }
     }
@@ -271,6 +297,7 @@ struct VerticalLEDEyeView: View {
         case .surprise, .joy: return 3.0
         case .fear: return 2.0
         case .sleepy: return 1.5
+        case .love: return 4.0  // 爱恋时最强的发光效果
         default: return 2.5
         }
     }
