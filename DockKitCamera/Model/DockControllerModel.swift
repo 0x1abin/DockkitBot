@@ -245,9 +245,9 @@ final class DockControllerModel: DockController {
             
             if isPortrait {
                 // 竖屏状态下：交换 X 和 Y 坐标
-                // 原来的 X 变成 Y，原来的 Y 变成 X
-                rawEyeX = 1.0 - faceCenter.y  // Y轴反转后变成X
-                rawEyeY = faceCenter.x        // X轴直接变成Y
+                // 原来的 X 变成 Y，原来的 Y 变成 X（不反转Y，避免左右颠倒）
+                rawEyeX = faceCenter.y        // Y轴直接变成X（不反转）
+                rawEyeY = 1.0 - faceCenter.x  // X轴反转后变成Y
             } else {
                 // 横屏状态下：保持原来的逻辑
                 // X轴：直接使用人脸的X坐标（不反转）
