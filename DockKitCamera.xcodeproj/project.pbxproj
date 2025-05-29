@@ -11,6 +11,8 @@
 		3E27DFA82DE22F4200F27742 /* MotorActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E27DFA62DE22F4200F27742 /* MotorActions.swift */; };
 		3E27DFA92DE22F4200F27742 /* MoodAnimations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E27DFA52DE22F4200F27742 /* MoodAnimations.swift */; };
 		3E27DFAA2DE22F4200F27742 /* VerticalLEDEyeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E27DFA72DE22F4200F27742 /* VerticalLEDEyeView.swift */; };
+		3EA19B5F2DE8BB130007E765 /* opus in Frameworks */ = {isa = PBXBuildFile; productRef = 3EA19B5E2DE8BB130007E765 /* opus */; };
+		3EA19B622DE8BBCC0007E765 /* ogg in Frameworks */ = {isa = PBXBuildFile; productRef = 3EA19B612DE8BBCC0007E765 /* ogg */; };
 		55308A982C3C8DB200814AB2 /* CameraPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308A852C3C8DB200814AB2 /* CameraPreview.swift */; };
 		55308AD12C3C8EDB00814AB2 /* DeviceLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308ACD2C3C8EDB00814AB2 /* DeviceLookup.swift */; };
 		5550AC8E2C1CD362002651AC /* DataTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5550AC8D2C1CD362002651AC /* DataTypes.swift */; };
@@ -63,6 +65,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3EA19B622DE8BBCC0007E765 /* ogg in Frameworks */,
+				3EA19B5F2DE8BB130007E765 /* opus in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -235,6 +239,10 @@
 				Base,
 			);
 			mainGroup = 55A595962C07D1DD001D3AA4;
+			packageReferences = (
+				3EA19B5D2DE8BB130007E765 /* XCRemoteSwiftPackageReference "opus-binary-xcframework" */,
+				3EA19B602DE8BBCC0007E765 /* XCRemoteSwiftPackageReference "ogg-binary-xcframework" */,
+			);
 			productRefGroup = 55A595A02C07D1DD001D3AA4 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -506,6 +514,38 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		3EA19B5D2DE8BB130007E765 /* XCRemoteSwiftPackageReference "opus-binary-xcframework" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sbooth/opus-binary-xcframework.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.2.2;
+			};
+		};
+		3EA19B602DE8BBCC0007E765 /* XCRemoteSwiftPackageReference "ogg-binary-xcframework" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sbooth/ogg-binary-xcframework";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.1.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		3EA19B5E2DE8BB130007E765 /* opus */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3EA19B5D2DE8BB130007E765 /* XCRemoteSwiftPackageReference "opus-binary-xcframework" */;
+			productName = opus;
+		};
+		3EA19B612DE8BBCC0007E765 /* ogg */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3EA19B602DE8BBCC0007E765 /* XCRemoteSwiftPackageReference "ogg-binary-xcframework" */;
+			productName = ogg;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 55A595972C07D1DD001D3AA4 /* Project object */;
 }
