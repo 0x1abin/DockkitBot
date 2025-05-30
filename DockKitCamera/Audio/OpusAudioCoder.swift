@@ -9,53 +9,33 @@ import opus.opus
 import AVFoundation
 import Foundation
 
-// MARK: - Configuration
+// MARK: - Opus Application Types
 
-public enum OpusConfiguration {
-    case voiceChat
-    case highQualityAudio
-    case lowLatency
-    case custom(sampleRate: Int32, frameSize: Int32, bitrate: Int32)
+/// Opus application type optimizations
+public enum OpusApplication: Int32, CaseIterable {
+    /// Best for most VoIP/videoconference applications where listening quality and intelligibility matter most
+    case voip = 2048  // OPUS_APPLICATION_VOIP
     
-    var sampleRate: Int32 {
+    /// Best for broadcast/high-fidelity application where the decoded audio should be as close as possible to the input
+    case audio = 2049  // OPUS_APPLICATION_AUDIO
+    
+    /// Only use when lowest-achievable latency is what matters most. Voice-optimized modes cannot be used
+    case restrictedLowDelay = 2051  // OPUS_APPLICATION_RESTRICTED_LOWDELAY
+    
+    /// Human-readable description of the application type
+    public var description: String {
         switch self {
-        case .voiceChat: return 16000
-        case .highQualityAudio: return 48000
-        case .lowLatency: return 24000
-        case .custom(let sampleRate, _, _): return sampleRate
+        case .voip:
+            return "VoIP/Videoconference (optimized for voice clarity)"
+        case .audio:
+            return "High-Fidelity Audio (optimized for music/broadcast)"
+        case .restrictedLowDelay:
+            return "Restricted Low Delay (optimized for minimal latency)"
         }
     }
     
-    var channels: Int32 {
-        return 1 // Mono for voice recording
-    }
-    
-    var application: Int32 {
-        switch self {
-        case .voiceChat: return OPUS_APPLICATION_VOIP
-        case .highQualityAudio: return OPUS_APPLICATION_AUDIO
-        case .lowLatency: return OPUS_APPLICATION_RESTRICTED_LOWDELAY
-        case .custom: return OPUS_APPLICATION_VOIP
-        }
-    }
-    
-    var frameSize: Int32 {
-        switch self {
-        case .voiceChat: return sampleRate / 50 // 20ms frames
-        case .highQualityAudio: return sampleRate / 25 // 40ms frames
-        case .lowLatency: return sampleRate / 100 // 10ms frames
-        case .custom(_, let frameSize, _): return frameSize
-        }
-    }
-    
-    var bitrate: Int32 {
-        switch self {
-        case .voiceChat: return 32000 // 32kbps
-        case .highQualityAudio: return 128000 // 128kbps
-        case .lowLatency: return 64000 // 64kbps
-        case .custom(_, _, let bitrate): return bitrate
-        }
-    }
+    /// Default application type for voice recording
+    public static let `default`: OpusApplication = .voip
 }
 
 // MARK: - Quality Metrics
@@ -71,18 +51,24 @@ public struct AudioQualityMetrics {
 
 public class OpusEncoder {
     private var encoder: OpaquePointer?
-    private let configuration: OpusConfiguration
+    private let sampleRate: Int32
+    private let channels: Int32
+    private let durationMs: Int32
+    private let frameSize: Int32
     private var encodeBuffer: [UInt8]
     
-    public init(configuration: OpusConfiguration) throws {
-        self.configuration = configuration
+    public init(sampleRate: Int32, channels: Int32 = 1, durationMs: Int32 = 60, application: OpusApplication = .voip) throws {
+        self.sampleRate = sampleRate
+        self.channels = channels
+        self.durationMs = durationMs
+        self.frameSize = (sampleRate * durationMs) / 1000
         self.encodeBuffer = [UInt8](repeating: 0, count: 4000) // Max packet size
         
         var error: Int32 = 0
         encoder = opus_encoder_create(
-            configuration.sampleRate,
-            configuration.channels,
-            configuration.application,
+            sampleRate,
+            channels,
+            application.rawValue,
             &error
         )
         
@@ -91,12 +77,10 @@ public class OpusEncoder {
             throw OpusError.encoderCreationFailed(error, errorMsg)
         }
         
-        // Note: opus_encoder_ctl is a variadic function unavailable in Swift
-        // Bitrate control will use default settings
-        
         print("✅ Opus encoder created successfully")
-        print("🔧 Encoder config: sampleRate=\(configuration.sampleRate), channels=\(configuration.channels), frameSize=\(configuration.frameSize)")
-        print("⚠️ Using default bitrate (opus_encoder_ctl unavailable in Swift)")
+        print("🔧 Encoder config: sampleRate=\(sampleRate), channels=\(channels), frameSize=\(frameSize) (\(durationMs)ms)")
+        print("🔧 Application type: \(application.description)")
+        print("🔧 Using Opus default bitrate (auto-managed)")
     }
     
     deinit {
@@ -136,7 +120,6 @@ public class OpusEncoder {
             throw OpusError.encoderNotInitialized
         }
         
-        let frameSize = configuration.frameSize
         let result = pcmData.withUnsafeBufferPointer { pcmPointer in
             opus_encode_float(
                 encoder,
@@ -160,18 +143,24 @@ public class OpusEncoder {
 
 public class OpusDecoder {
     private var decoder: OpaquePointer?
-    private let configuration: OpusConfiguration
+    private let sampleRate: Int32
+    private let channels: Int32
+    private let durationMs: Int32
+    private let frameSize: Int32
     private var decodeBuffer: [Float]
     
-    public init(configuration: OpusConfiguration) throws {
-        self.configuration = configuration
+    public init(sampleRate: Int32, channels: Int32 = 1, durationMs: Int32 = 60) throws {
+        self.sampleRate = sampleRate
+        self.channels = channels
+        self.durationMs = durationMs
+        self.frameSize = (sampleRate * durationMs) / 1000
         // Increase buffer size to support larger frames (up to 120ms at 48kHz)
         self.decodeBuffer = [Float](repeating: 0, count: 5760) // 48000 * 0.12 = 5760 samples max
         
         var error: Int32 = 0
         decoder = opus_decoder_create(
-            configuration.sampleRate,
-            configuration.channels,
+            sampleRate,
+            channels,
             &error
         )
         
@@ -181,7 +170,7 @@ public class OpusDecoder {
         }
         
         print("✅ Opus decoder created successfully")
-        print("🔧 Decoder config: sampleRate=\(configuration.sampleRate), channels=\(configuration.channels), frameSize=\(configuration.frameSize)")
+        print("🔧 Decoder config: sampleRate=\(sampleRate), channels=\(channels), frameSize=\(frameSize) (\(durationMs)ms)")
         print("🔧 Decode buffer size: \(decodeBuffer.count) samples")
     }
     
@@ -208,7 +197,7 @@ public class OpusDecoder {
         }
         
         // Capture values outside of closures to avoid concurrent access
-        let maxSamplesPerChannel = Int32(decodeBuffer.count / Int(configuration.channels))
+        let maxSamplesPerChannel = Int32(decodeBuffer.count / Int(channels))
         
         let result = opusData.withUnsafeBytes { bytes in
             decodeBuffer.withUnsafeMutableBufferPointer { decodePointer in
@@ -233,8 +222,8 @@ public class OpusDecoder {
         
         // Create output buffer with actual decoded sample count
         let format = AVAudioFormat(
-            standardFormatWithSampleRate: Double(configuration.sampleRate),
-            channels: AVAudioChannelCount(configuration.channels)
+            standardFormatWithSampleRate: Double(sampleRate),
+            channels: AVAudioChannelCount(channels)
         )!
         
         guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(result)) else {
@@ -264,7 +253,7 @@ public class OpusDecoder {
         }
         
         // Capture values outside of closures to avoid concurrent access
-        let maxSamplesPerChannel = Int32(decodeBuffer.count / Int(configuration.channels))
+        let maxSamplesPerChannel = Int32(decodeBuffer.count / Int(channels))
         
         let result = opusData.withUnsafeBytes { bytes in
             decodeBuffer.withUnsafeMutableBufferPointer { decodePointer in
