@@ -52,6 +52,7 @@ public protocol XiaozhiVoiceClientDelegate: AnyObject {
     func voiceClient(_ client: XiaozhiVoiceClient, didReceiveAudioData data: Data)
     func voiceClient(_ client: XiaozhiVoiceClient, didChangeTTSState state: String)
     func voiceClient(_ client: XiaozhiVoiceClient, didReceiveMessage message: [String: Any])
+    func voiceClient(_ client: XiaozhiVoiceClient, didReceiveEmotion emotion: String)
 }
 
 // MARK: - Xiaozhi Voice Client
@@ -195,6 +196,11 @@ public class XiaozhiVoiceClient: NSObject {
             print("ℹ️ Unhandled message type: \(type)")
         }
         
+        // 检查是否包含emotion字段
+        if let emotion = json["emotion"] as? String {
+            handleEmotionMessage(emotion, sessionId: json["session_id"] as? String)
+        }
+        
         DispatchQueue.main.async {
             self.delegate?.voiceClient(self, didReceiveMessage: json)
         }
@@ -254,6 +260,14 @@ public class XiaozhiVoiceClient: NSObject {
            receivedSessionId == sessionId {
             print("👋 Received goodbye message")
             sessionId = nil
+        }
+    }
+    
+    private func handleEmotionMessage(_ emotion: String, sessionId: String?) {
+        print("🎭 Received emotion: \(emotion) for session: \(sessionId ?? "unknown")")
+        
+        DispatchQueue.main.async {
+            self.delegate?.voiceClient(self, didReceiveEmotion: emotion)
         }
     }
     
@@ -408,6 +422,81 @@ public class XiaozhiVoiceClient: NSObject {
         else if manual && isConnected && listenState == "start" {
             stopListening()
         }
+    }
+    
+    // MARK: - Emotion Mapping
+    
+    /// 将emotion字符串映射到RobotMood
+    internal static func mapEmotionToRobotMood(_ emotion: String) -> RobotMood {
+        switch emotion.lowercased() {
+        case "happy", "happiness", "joy", "joyful":
+            return .happy
+        case "sad", "sadness", "sorrow":
+            return .sad
+        case "angry", "anger", "mad":
+            return .anger
+        case "surprised", "surprise", "astonished":
+            return .surprise
+        case "fear", "afraid", "scared", "fearful":
+            return .fear
+        case "disgust", "disgusted", "revulsion":
+            return .disgust
+        case "excited", "excitement", "thrilled":
+            return .excited
+        case "love", "loving", "affection", "romantic":
+            return .love
+        case "curious", "curiosity", "interested":
+            return .curiosity
+        case "sleepy", "tired", "drowsy", "fatigue":
+            return .sleepy
+        case "pride", "proud", "accomplished":
+            return .pride
+        case "shame", "ashamed", "embarrassed":
+            return .shame
+        case "guilt", "guilty", "regret":
+            return .guilt
+        case "trust", "trusting", "confident":
+            return .trust
+        case "acceptance", "accepting", "peaceful":
+            return .acceptance
+        case "contempt", "disdain", "scorn":
+            return .contempt
+        case "envy", "envious", "jealous":
+            return .envy
+        case "anticipation", "anticipating", "expectant":
+            return .anticipation
+        case "neutral", "normal", "calm", "default":
+            return .normal
+        default:
+            print("⚠️ Unknown emotion '\(emotion)', defaulting to normal")
+            return .normal
+        }
+    }
+    
+    // MARK: - Testing Methods
+    
+    /// 测试emotion映射功能
+    internal func testEmotionMapping() {
+        let testEmotions = ["neutral", "happy", "sad", "angry", "surprised", "fear", "love", "excited"]
+        
+        print("🧪 Testing emotion mapping:")
+        for emotion in testEmotions {
+            let mood = XiaozhiVoiceClient.mapEmotionToRobotMood(emotion)
+            print("  '\(emotion)' -> \(mood)")
+        }
+    }
+    
+    /// 模拟接收emotion消息（用于测试）
+    internal func simulateEmotionMessage(_ emotion: String) {
+        let testMessage: [String: Any] = [
+            "type": "llm",
+            "text": "😶",
+            "emotion": emotion,
+            "session_id": sessionId ?? "test-session"
+        ]
+        
+        print("🎭 Simulating emotion message: \(testMessage)")
+        handleEmotionMessage(emotion, sessionId: sessionId)
     }
 }
 

@@ -19,9 +19,16 @@ struct VoiceChatButton: View {
     @State private var connectionStatus = "disconnected"
     @State private var showButton = true
     @State private var isManualMode = false // 默认自动模式
+    @State private var testEmotionIndex = 0
+    private let testEmotions = ["neutral", "happy", "sad", "angry", "surprised", "fear", "love", "excited", "curious", "sleepy"]
     
     // Keep strong reference to delegate wrapper
     @State private var delegateWrapper: VoiceClientDelegateWrapper?
+    
+    // Emotion callback
+    var onEmotionReceived: ((RobotMood) -> Void)?
+    
+    @State private var lastTapTime: TimeInterval?
     
     var body: some View {
         if showButton {
@@ -224,15 +231,26 @@ struct VoiceChatButton: View {
             // 如果正在播放TTS，中断当前播放
             voiceClient?.abortCurrentTTS()
         } else {
-            // 切换手动/自动模式
-            isManualMode.toggle()
-            voiceClient?.setManualMode(isManualMode)
+            // 已连接状态下：双击切换模式，单击测试emotion
+            let currentTime = Date().timeIntervalSince1970
             
-            if isManualMode {
-                print("🔄 切换到手动模式 - 长按说话")
+            // 检查是否为双击
+            if let lastTapTime = lastTapTime, currentTime - lastTapTime < 0.5 {
+                // 双击：切换手动/自动模式
+                isManualMode.toggle()
+                voiceClient?.setManualMode(isManualMode)
+                
+                if isManualMode {
+                    print("🔄 切换到手动模式 - 长按说话")
+                } else {
+                    print("🔄 切换到自动模式 - AI自动监听")
+                }
             } else {
-                print("🔄 切换到自动模式 - AI自动监听")
+                // 单击：测试emotion
+                testNextEmotion()
             }
+            
+            self.lastTapTime = currentTime
         }
     }
     
@@ -254,6 +272,14 @@ struct VoiceChatButton: View {
         
         print("⏹️ Stopping manual listening...")
         voiceClient?.stopListening()
+    }
+    
+    private func testNextEmotion() {
+        let emotion = testEmotions[testEmotionIndex]
+        testEmotionIndex = (testEmotionIndex + 1) % testEmotions.count
+        
+        print("🧪 Testing emotion: \(emotion) (\(testEmotionIndex)/\(testEmotions.count))")
+        voiceClient?.simulateEmotionMessage(emotion)
     }
     
     // MARK: - Voice Client Delegate Callbacks
@@ -336,6 +362,16 @@ private class VoiceClientDelegateWrapper: XiaozhiVoiceClientDelegate {
            type == "listen",
            let state = message["state"] as? String {
             button.handleListeningStateChange(isListening: state == "start")
+        }
+    }
+    
+    func voiceClient(_ client: XiaozhiVoiceClient, didReceiveEmotion emotion: String) {
+        // 将emotion映射到RobotMood并触发回调
+        let robotMood = XiaozhiVoiceClient.mapEmotionToRobotMood(emotion)
+        print("🎭 Converting emotion '\(emotion)' to RobotMood: \(robotMood)")
+        
+        DispatchQueue.main.async {
+            self.button.onEmotionReceived?(robotMood)
         }
     }
 }
