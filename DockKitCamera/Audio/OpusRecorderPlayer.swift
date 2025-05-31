@@ -50,7 +50,7 @@ public class OpusRecorderPlayer {
     
     // MARK: - Initialization
     
-    public init(sampleRate: Int32 = 24000, channels: Int32 = 1, durationMs: Int32 = 60, application: OpusApplication = .voip) throws {
+    public init(sampleRate: Int32 = 24000, channels: Int32 = 1, durationMs: Int32 = 100, application: OpusApplication = .voip) throws {
         self.sampleRate = sampleRate
         self.channels = channels
         self.durationMs = durationMs

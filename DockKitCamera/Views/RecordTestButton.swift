@@ -162,15 +162,29 @@ struct RecordTestButton: View {
         // Start playing
         opusRecorderPlayer?.startPlaying()
         
-        // Play all recorded audio data
-        for audioData in recordedAudioData {
-            opusRecorderPlayer?.playOpusData(audioData)
+        // Schedule audio data with proper spacing to avoid buffer conflicts
+        scheduleAudioPlayback()
+    }
+    
+    private func scheduleAudioPlayback() {
+        for (index, audioData) in recordedAudioData.enumerated() {
+            // Schedule each audio chunk with a small delay to ensure proper queuing
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.05) { // 50ms spacing
+                self.opusRecorderPlayer?.playOpusData(audioData)
+            }
         }
         
-        // Stop playing after estimated duration
-        let estimatedDuration = Double(recordedAudioData.count) * 0.06 // Assuming 60ms frames
-        DispatchQueue.main.asyncAfter(deadline: .now() + estimatedDuration + 0.5) {
+        // Stop playing after all chunks are scheduled plus playback time
+        let schedulingTime = Double(recordedAudioData.count) * 0.05 // Time to schedule all chunks
+        let playbackTime = Double(recordedAudioData.count) * 0.1 // 100ms per frame
+        let bufferTime: TimeInterval = 0.5 // Extra buffer
+        let totalTime = schedulingTime + playbackTime + bufferTime
+        
+        print("🕐 Scheduling \(recordedAudioData.count) chunks over \(schedulingTime)s, total duration: \(totalTime)s")
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + totalTime) {
             self.opusRecorderPlayer?.stopPlaying()
+            print("🎵 Finished playing all audio chunks")
         }
     }
     
