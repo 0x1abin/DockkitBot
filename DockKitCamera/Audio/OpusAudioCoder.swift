@@ -38,15 +38,6 @@ public enum OpusApplication: Int32, CaseIterable {
     public static let `default`: OpusApplication = .voip
 }
 
-// MARK: - Quality Metrics
-
-public struct AudioQualityMetrics {
-    let signalToNoise: Double
-    let bitrate: Int32
-    let packetLoss: Double
-    let latency: TimeInterval
-}
-
 // MARK: - Opus Encoder
 
 public class OpusEncoder {

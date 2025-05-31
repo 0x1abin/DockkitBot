@@ -13,6 +13,10 @@
 		3E27DFAA2DE22F4200F27742 /* VerticalLEDEyeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E27DFA72DE22F4200F27742 /* VerticalLEDEyeView.swift */; };
 		3EA19B5F2DE8BB130007E765 /* opus in Frameworks */ = {isa = PBXBuildFile; productRef = 3EA19B5E2DE8BB130007E765 /* opus */; };
 		3EA19B622DE8BBCC0007E765 /* ogg in Frameworks */ = {isa = PBXBuildFile; productRef = 3EA19B612DE8BBCC0007E765 /* ogg */; };
+		3EB605E62DEB3BB200300628 /* OpusRecorderPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EB605E42DEB3BB200300628 /* OpusRecorderPlayer.swift */; };
+		3EB605E72DEB3BB200300628 /* OpusAudioCoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EB605E32DEB3BB200300628 /* OpusAudioCoder.swift */; };
+		3EB605E92DEB3C0600300628 /* ogg in Frameworks */ = {isa = PBXBuildFile; productRef = 3EB605E82DEB3C0600300628 /* ogg */; };
+		3EB605EB2DEB3C1300300628 /* opus in Frameworks */ = {isa = PBXBuildFile; productRef = 3EB605EA2DEB3C1300300628 /* opus */; };
 		55308A982C3C8DB200814AB2 /* CameraPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308A852C3C8DB200814AB2 /* CameraPreview.swift */; };
 		55308AD12C3C8EDB00814AB2 /* DeviceLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55308ACD2C3C8EDB00814AB2 /* DeviceLookup.swift */; };
 		5550AC8E2C1CD362002651AC /* DataTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5550AC8D2C1CD362002651AC /* DataTypes.swift */; };
@@ -36,6 +40,8 @@
 		3E27DFA52DE22F4200F27742 /* MoodAnimations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodAnimations.swift; sourceTree = "<group>"; };
 		3E27DFA62DE22F4200F27742 /* MotorActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotorActions.swift; sourceTree = "<group>"; };
 		3E27DFA72DE22F4200F27742 /* VerticalLEDEyeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerticalLEDEyeView.swift; sourceTree = "<group>"; };
+		3EB605E32DEB3BB200300628 /* OpusAudioCoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpusAudioCoder.swift; sourceTree = "<group>"; };
+		3EB605E42DEB3BB200300628 /* OpusRecorderPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpusRecorderPlayer.swift; sourceTree = "<group>"; };
 		49B2232BEA044D0CB0C67755 /* RobotFaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RobotFaceView.swift; sourceTree = "<group>"; };
 		55122A412C1BCF0A0055FBF1 /* DockKit-Camera-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "DockKit-Camera-Info.plist"; sourceTree = SOURCE_ROOT; };
 		55308A852C3C8DB200814AB2 /* CameraPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreview.swift; sourceTree = "<group>"; };
@@ -65,8 +71,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3EB605E92DEB3C0600300628 /* ogg in Frameworks */,
 				3EA19B622DE8BBCC0007E765 /* ogg in Frameworks */,
 				3EA19B5F2DE8BB130007E765 /* opus in Frameworks */,
+				3EB605EB2DEB3C1300300628 /* opus in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -80,6 +88,15 @@
 			);
 			name = LICENSE;
 			path = .;
+			sourceTree = "<group>";
+		};
+		3EB605E52DEB3BB200300628 /* Audio */ = {
+			isa = PBXGroup;
+			children = (
+				3EB605E32DEB3BB200300628 /* OpusAudioCoder.swift */,
+				3EB605E42DEB3BB200300628 /* OpusRecorderPlayer.swift */,
+			);
+			path = Audio;
 			sourceTree = "<group>";
 		};
 		55122A892C1CD2C60055FBF1 /* Support */ = {
@@ -161,6 +178,7 @@
 		55A595A12C07D1DD001D3AA4 /* DockKitCamera */ = {
 			isa = PBXGroup;
 			children = (
+				3EB605E52DEB3BB200300628 /* Audio */,
 				55122A412C1BCF0A0055FBF1 /* DockKit-Camera-Info.plist */,
 				55A595A22C07D1DD001D3AA4 /* DockKit_CameraApp.swift */,
 				55A595A42C07D1DD001D3AA4 /* ContentView.swift */,
@@ -222,7 +240,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1600;
-				LastUpgradeCheck = 1600;
+				LastUpgradeCheck = 1640;
 				ORGANIZATIONNAME = Apple;
 				TargetAttributes = {
 					55A5959E2C07D1DD001D3AA4 = {
@@ -275,6 +293,8 @@
 				5550ACBF2C1E7261002651AC /* PreviewDockAccessoryControllerModel.swift in Sources */,
 				3E27DFA82DE22F4200F27742 /* MotorActions.swift in Sources */,
 				3E27DFA92DE22F4200F27742 /* MoodAnimations.swift in Sources */,
+				3EB605E62DEB3BB200300628 /* OpusRecorderPlayer.swift in Sources */,
+				3EB605E72DEB3BB200300628 /* OpusAudioCoder.swift in Sources */,
 				3E27DFAA2DE22F4200F27742 /* VerticalLEDEyeView.swift in Sources */,
 				55A595A52C07D1DD001D3AA4 /* ContentView.swift in Sources */,
 				5550ACBB2C1E6C8D002651AC /* DockControllerModel.swift in Sources */,
@@ -329,6 +349,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 86K252GRMM;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -393,6 +414,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 86K252GRMM;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -424,7 +446,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"DockKitCamera/Preview Content\"";
-				DEVELOPMENT_TEAM = 86K252GRMM;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -463,7 +484,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"DockKitCamera/Preview Content\"";
-				DEVELOPMENT_TEAM = 86K252GRMM;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -544,6 +564,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 3EA19B602DE8BBCC0007E765 /* XCRemoteSwiftPackageReference "ogg-binary-xcframework" */;
 			productName = ogg;
+		};
+		3EB605E82DEB3C0600300628 /* ogg */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3EA19B602DE8BBCC0007E765 /* XCRemoteSwiftPackageReference "ogg-binary-xcframework" */;
+			productName = ogg;
+		};
+		3EB605EA2DEB3C1300300628 /* opus */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3EA19B5D2DE8BB130007E765 /* XCRemoteSwiftPackageReference "opus-binary-xcframework" */;
+			productName = opus;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

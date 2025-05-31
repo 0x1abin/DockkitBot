@@ -17,7 +17,6 @@ public protocol OpusAudioStreamDelegate {
     func didReceiveEncodedAudio(_ data: Data, timestamp: TimeInterval)
     func didReceiveDecodedAudio(_ buffer: AVAudioPCMBuffer, timestamp: TimeInterval)
     func didEncounterError(_ error: Error)
-    func didUpdateQualityMetrics(_ metrics: AudioQualityMetrics)
 }
 
 // MARK: - Opus Recorder Player
@@ -26,8 +25,12 @@ public class OpusRecorderPlayer {
     
     // MARK: - Properties
     
-    // Audio configuration
-    private let configuration: OpusConfiguration
+    // Audio configuration parameters
+    private let sampleRate: Int32
+    private let channels: Int32
+    private let durationMs: Int32
+    private let application: OpusApplication
+    private let frameSize: Int32
     
     // Audio formats
     private let recordingFormat: AVAudioFormat
@@ -47,21 +50,25 @@ public class OpusRecorderPlayer {
     
     // MARK: - Initialization
     
-    public init(configuration: OpusConfiguration = .custom(sampleRate: 24000, frameSize: 1440, bitrate: 32000)) throws {
-        self.configuration = configuration
+    public init(sampleRate: Int32 = 24000, channels: Int32 = 1, durationMs: Int32 = 60, application: OpusApplication = .voip) throws {
+        self.sampleRate = sampleRate
+        self.channels = channels
+        self.durationMs = durationMs
+        self.application = application
+        self.frameSize = (sampleRate * durationMs) / 1000
         self.audioEngine = AVAudioEngine()
         self.inputNode = audioEngine.inputNode
         self.playerNode = AVAudioPlayerNode()
         
         // Initialize audio formats
         recordingFormat = AVAudioFormat(
-            standardFormatWithSampleRate: Double(configuration.sampleRate),
-            channels: AVAudioChannelCount(configuration.channels)
+            standardFormatWithSampleRate: Double(sampleRate),
+            channels: AVAudioChannelCount(channels)
         )!
         
         playbackFormat = AVAudioFormat(
-            standardFormatWithSampleRate: Double(configuration.sampleRate),
-            channels: AVAudioChannelCount(configuration.channels)
+            standardFormatWithSampleRate: Double(sampleRate),
+            channels: AVAudioChannelCount(channels)
         )!
         
         try setupAudioSession()
@@ -86,8 +93,8 @@ public class OpusRecorderPlayer {
         
         // Create playback format matching our configuration
         let playbackFormat = AVAudioFormat(
-            standardFormatWithSampleRate: Double(configuration.sampleRate),
-            channels: AVAudioChannelCount(configuration.channels)
+            standardFormatWithSampleRate: Double(sampleRate),
+            channels: AVAudioChannelCount(channels)
         )!
         
         // Connect player node to output with correct format
@@ -99,8 +106,8 @@ public class OpusRecorderPlayer {
         print("🎯 Target recording format: \(recordingFormat)")
         print("🔊 Playback format: \(playbackFormat)")
         
-        // Calculate buffer size for 60ms frames
-        let bufferSize = AVAudioFrameCount(configuration.frameSize)
+        // Calculate buffer size for frame duration
+        let bufferSize = AVAudioFrameCount(frameSize)
         
         // Install recording tap using hardware format
         inputNode.installTap(onBus: 0, bufferSize: bufferSize, format: hardwareFormat) { [weak self] buffer, when in
@@ -115,8 +122,8 @@ public class OpusRecorderPlayer {
     }
     
     private func initializeCodecs() throws {
-        encoder = try OpusEncoder(configuration: configuration)
-        decoder = try OpusDecoder(configuration: configuration)
+        encoder = try OpusEncoder(sampleRate: sampleRate, channels: channels, durationMs: durationMs, application: application)
+        decoder = try OpusDecoder(sampleRate: sampleRate, channels: channels, durationMs: durationMs)
     }
     
     // MARK: - Recording Control
@@ -153,12 +160,8 @@ public class OpusRecorderPlayer {
             let opusData = try encoder.encode(convertedBuffer)
             let adjustedTimestamp = timestamp - recordingStartTime
             
-            // Calculate quality metrics
-            let metrics = calculateQualityMetrics(buffer: convertedBuffer)
-            
             DispatchQueue.main.async {
                 self.delegate?.didReceiveEncodedAudio(opusData, timestamp: adjustedTimestamp)
-                self.delegate?.didUpdateQualityMetrics(metrics)
             }
             
         } catch {
@@ -192,27 +195,6 @@ public class OpusRecorderPlayer {
         }
         
         return outputBuffer
-    }
-    
-    private func calculateQualityMetrics(buffer: AVAudioPCMBuffer) -> AudioQualityMetrics {
-        // Simple signal analysis for quality metrics
-        var rms: Float = 0.0
-        if let floatChannelData = buffer.floatChannelData {
-            let channelData = floatChannelData[0]
-            for i in 0..<Int(buffer.frameLength) {
-                rms += channelData[i] * channelData[i]
-            }
-            rms = sqrt(rms / Float(buffer.frameLength))
-        }
-        
-        let signalToNoise = Double(rms) * 100 // Simplified SNR calculation
-        
-        return AudioQualityMetrics(
-            signalToNoise: signalToNoise,
-            bitrate: configuration.bitrate,
-            packetLoss: 0.0, // Not applicable for local recording
-            latency: 0.02 // Approximate 20ms latency
-        )
     }
     
     // MARK: - Playback Control
