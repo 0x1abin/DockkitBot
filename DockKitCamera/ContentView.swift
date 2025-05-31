@@ -25,15 +25,20 @@ struct ContentView<CameraModel: Camera, DockControllerModel: DockController>: Vi
                     .allowsHitTesting(false)
                     .hidden()
                 
-                // Recording button - 左下角录音测试按钮
+                // Control buttons - 左下角语音对话按钮，右下角录音测试按钮
                 VStack {
                     Spacer()
                     HStack {
-                        RecordTestButton()
+                        // Voice chat button (左下角)
+                        VoiceChatButton()
+                        
                         Spacer()
+                        
+                        // Record test button (右下角)
+                        RecordTestButton()
                     }
                     .padding(.bottom, isLandscape(geometry) ? 60 : 40)
-                    .padding(.leading, isLandscape(geometry) ? 45 : 30)
+                    .padding(.horizontal, isLandscape(geometry) ? 45 : 30)
                 }
             }
         }

@@ -45,7 +45,7 @@ public class OpusRecorderPlayer {
     public var delegate: OpusAudioStreamDelegate?
     
     private var isRecording = false
-    private var isPlaying = false
+    public var isPlaying = false
     private var recordingStartTime: TimeInterval = 0
     
     // MARK: - Initialization
