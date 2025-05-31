@@ -18,6 +18,7 @@ struct VoiceChatButton: View {
     @State private var ttsState = "idle"
     @State private var connectionStatus = "disconnected"
     @State private var showButton = true
+    @State private var isManualMode = false // 默认自动模式
     
     // Keep strong reference to delegate wrapper
     @State private var delegateWrapper: VoiceClientDelegateWrapper?
@@ -78,6 +79,20 @@ struct VoiceChatButton: View {
                     Circle()
                         .fill(connectionIndicatorColor)
                         .frame(width: 8, height: 8)
+                    
+                    // Mode indicator (只在连接时显示)
+                    if isConnected {
+                        Text(isManualMode ? "手动" : "自动")
+                            .font(.system(size: 8, weight: .medium))
+                            .foregroundColor(.white.opacity(0.8))
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(
+                                Capsule()
+                                    .fill(isManualMode ? Color.orange.opacity(0.7) : Color.green.opacity(0.7))
+                            )
+                    }
+                    
                     Spacer()
                 }
             }
@@ -89,7 +104,8 @@ struct VoiceChatButton: View {
             handleTap()
         }
         .onLongPressGesture(minimumDuration: 0.0, maximumDistance: 50, pressing: { pressing in
-            if isConnected {
+            // 只在手动模式和已连接状态下才响应长按
+            if isConnected && isManualMode {
                 if pressing {
                     startManualListening()
                 } else {
@@ -115,9 +131,9 @@ struct VoiceChatButton: View {
         } else if ttsState == "start" || ttsState == "sentence_start" {
             return "speaker.wave.2.fill"
         } else if isListening {
-            return "mic.fill"
+            return isManualMode ? "mic.fill" : "waveform.circle.fill"
         } else {
-            return "message.circle"
+            return isManualMode ? "message.circle" : "brain.head.profile"
         }
     }
     
@@ -181,7 +197,15 @@ struct VoiceChatButton: View {
         delegateWrapper = VoiceClientDelegateWrapper(button: self)
         voiceClient?.delegate = delegateWrapper
         
-        print("✅ VoiceChatButton initialized")
+        // 设置为自动模式
+        voiceClient?.setManualMode(false)
+        
+        // 默认自动连接到语音服务
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.connectToVoiceService()
+        }
+        
+        print("✅ VoiceChatButton initialized with auto mode")
     }
     
     private func cleanup() {
@@ -194,15 +218,21 @@ struct VoiceChatButton: View {
     
     private func handleTap() {
         if !isConnected {
-            // Connect to voice service
+            // 如果未连接，重新连接到语音服务
             connectToVoiceService()
         } else if ttsState == "start" || ttsState == "sentence_start" {
-            // Abort current TTS
+            // 如果正在播放TTS，中断当前播放
             voiceClient?.abortCurrentTTS()
         } else {
-            // Toggle auto listening (if in auto mode)
-            // For now, just show connection status
-            print("ℹ️ Voice chat connected. Long press to talk manually.")
+            // 切换手动/自动模式
+            isManualMode.toggle()
+            voiceClient?.setManualMode(isManualMode)
+            
+            if isManualMode {
+                print("🔄 切换到手动模式 - 长按说话")
+            } else {
+                print("🔄 切换到自动模式 - AI自动监听")
+            }
         }
     }
     

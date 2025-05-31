@@ -69,7 +69,7 @@ public class XiaozhiVoiceClient: NSObject {
     private var sessionId: String?
     private var listenState: String = "stop"
     private var ttsState: String = "idle"
-    private var isManualMode = false
+    private var isManualMode = false // 默认自动模式，与Python版本一致
     
     // Audio components
     private var opusRecorderPlayer: OpusRecorderPlayer?
@@ -393,6 +393,22 @@ public class XiaozhiVoiceClient: NSObject {
     public var currentSessionId: String? { sessionId }
     public var currentListenState: String { listenState }
     public var currentTTSState: String { ttsState }
+    public var isInManualMode: Bool { isManualMode }
+    
+    // Switch between manual and auto mode
+    public func setManualMode(_ manual: Bool) {
+        isManualMode = manual
+        print("🔄 Switched to \(manual ? "manual" : "auto") mode")
+        
+        // If switching to auto mode and connected, start listening
+        if !manual && isConnected && listenState == "stop" && ttsState == "stop" {
+            startListening(mode: "auto")
+        }
+        // If switching to manual mode, stop current listening
+        else if manual && isConnected && listenState == "start" {
+            stopListening()
+        }
+    }
 }
 
 // MARK: - URLSessionWebSocketDelegate
