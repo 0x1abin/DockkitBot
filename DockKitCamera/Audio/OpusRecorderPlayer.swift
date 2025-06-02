@@ -292,7 +292,6 @@ public class OpusRecorderPlayer {
             }
         }
         
-        print("🔊 Applied \(amplificationFactor)x volume amplification to audio buffer")
     }
     
     // MARK: - Audio Enhancement Control
