@@ -179,9 +179,7 @@ public class OpusDecoder {
         guard let decoder = decoder else {
             throw OpusError.decoderNotInitialized
         }
-        
-        print("🔍 Decoding opus data: \(opusData.count) bytes, max frame size: \(decodeBuffer.count)")
-        
+
         // Clear decode buffer before use
         decodeBuffer.withUnsafeMutableBufferPointer { buffer in
             buffer.initialize(repeating: 0)
@@ -202,9 +200,7 @@ public class OpusDecoder {
                 )
             }
         }
-        
-        print("📊 Decode result: \(result) samples")
-        
+                
         guard result > 0 else {
             let errorMsg = String(cString: opus_strerror(result))
             print("❌ Decode failed with code: \(result) - \(errorMsg)")
@@ -229,7 +225,6 @@ public class OpusDecoder {
             floatChannelData[0].update(from: decodeBuffer, count: Int(result))
         }
         
-        print("✅ Successfully decoded \(result) samples")
         return buffer
     }
     

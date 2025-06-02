@@ -176,7 +176,7 @@ struct RecordTestButton: View {
         
         // Stop playing after all chunks are scheduled plus playback time
         let schedulingTime = Double(recordedAudioData.count) * 0.05 // Time to schedule all chunks
-        let playbackTime = Double(recordedAudioData.count) * 0.1 // 100ms per frame
+        let playbackTime = Double(recordedAudioData.count) * 0.06 // 60ms per frame
         let bufferTime: TimeInterval = 0.5 // Extra buffer
         let totalTime = schedulingTime + playbackTime + bufferTime
         

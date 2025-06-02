@@ -48,9 +48,14 @@ public class OpusRecorderPlayer {
     public var isPlaying = false
     private var recordingStartTime: TimeInterval = 0
     
+    // Audio enhancement properties
+    private var audioUnitEQ: AVAudioUnitEQ?
+    private var audioMixer: AVAudioMixerNode?
+    private let volumeBoost: Float = 2.0  // Amplify volume by 2x
+    
     // MARK: - Initialization
     
-    public init(sampleRate: Int32 = 24000, channels: Int32 = 1, durationMs: Int32 = 100, application: OpusApplication = .voip) throws {
+    public init(sampleRate: Int32 = 24000, channels: Int32 = 1, durationMs: Int32 = 60, application: OpusApplication = .voip) throws {
         self.sampleRate = sampleRate
         self.channels = channels
         self.durationMs = durationMs
@@ -79,8 +84,35 @@ public class OpusRecorderPlayer {
     private func setupAudioSession() throws {
         #if os(iOS)
         let audioSession = AVAudioSession.sharedInstance()
-        try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
+        
+        // Configure audio session for optimal recording quality
+        try audioSession.setCategory(.playAndRecord, 
+                                   mode: .videoRecording,  // Better for recording quality
+                                   options: [.defaultToSpeaker, 
+                                            .allowBluetooth,
+                                            .allowBluetoothA2DP])
+        
+        // Set preferred sample rate and buffer duration for better quality
+        try audioSession.setPreferredSampleRate(Double(sampleRate))
+        try audioSession.setPreferredIOBufferDuration(Double(durationMs) / 1000.0)
+        
+        // Enable audio input gain control if available
+        if audioSession.isInputGainSettable {
+            // Set input gain to maximum for louder recording
+            try audioSession.setInputGain(1.0) // Range: 0.0 to 1.0
+            print("🎚️ Input gain set to maximum: \(audioSession.inputGain)")
+        } else {
+            print("⚠️ Input gain is not settable on this device")
+        }
+        
+        // Activate the audio session
         try audioSession.setActive(true)
+        
+        print("✅ Audio session configured for optimal recording quality")
+        print("📊 Sample rate: \(audioSession.sampleRate) Hz")
+        print("🎤 Input channels: \(audioSession.inputNumberOfChannels)")
+        print("🔊 Output channels: \(audioSession.outputNumberOfChannels)")
+        
         #else
         // macOS doesn't need audio session setup
         print("✅ Audio session setup completed (macOS)")
@@ -88,7 +120,25 @@ public class OpusRecorderPlayer {
     }
     
     private func setupAudioEngine() throws {
-        // Add player node to engine
+        // Add audio enhancement nodes
+        audioMixer = AVAudioMixerNode()
+        audioUnitEQ = AVAudioUnitEQ(numberOfBands: 1)
+        
+        // Configure EQ for voice enhancement
+        if let eq = audioUnitEQ {
+            eq.bands[0].frequency = 1000.0  // Focus on speech frequencies
+            eq.bands[0].gain = 8.0          // Boost by 6dB
+            eq.bands[0].bandwidth = 0.5
+            eq.bands[0].filterType = .parametric
+        }
+        
+        // Add nodes to engine
+        if let mixer = audioMixer {
+            audioEngine.attach(mixer)
+        }
+        if let eq = audioUnitEQ {
+            audioEngine.attach(eq)
+        }
         audioEngine.attach(playerNode)
         
         // Create playback format matching our configuration
@@ -97,8 +147,22 @@ public class OpusRecorderPlayer {
             channels: AVAudioChannelCount(channels)
         )!
         
-        // Connect player node to output with correct format
-        audioEngine.connect(playerNode, to: audioEngine.outputNode, format: playbackFormat)
+        // Connect audio processing chain: mixer -> EQ -> output
+        if let mixer = audioMixer, let eq = audioUnitEQ {
+            audioEngine.connect(mixer, to: eq, format: playbackFormat)
+            audioEngine.connect(eq, to: audioEngine.outputNode, format: playbackFormat)
+            
+            // Set volume boost on mixer
+            mixer.outputVolume = volumeBoost
+        }
+        
+        // Connect player node to mixer (for enhanced playback)
+        if let mixer = audioMixer {
+            audioEngine.connect(playerNode, to: mixer, format: playbackFormat)
+        } else {
+            // Fallback to direct connection
+            audioEngine.connect(playerNode, to: audioEngine.outputNode, format: playbackFormat)
+        }
         
         // Get the hardware format from input node
         let hardwareFormat = inputNode.inputFormat(forBus: 0)
@@ -119,6 +183,8 @@ public class OpusRecorderPlayer {
         // Prepare and start audio engine
         audioEngine.prepare()
         try audioEngine.start()
+        
+        print("🎚️ Audio enhancement enabled: Volume boost = \(volumeBoost)x, EQ = \(audioUnitEQ?.bands[0].gain ?? 0)dB")
     }
     
     private func initializeCodecs() throws {
@@ -150,12 +216,15 @@ public class OpusRecorderPlayer {
         
         do {
             // Convert hardware format to target recording format if needed
-            let convertedBuffer: AVAudioPCMBuffer
+            var convertedBuffer: AVAudioPCMBuffer
             if hardwareFormat.sampleRate != recordingFormat.sampleRate {
                 convertedBuffer = try convertAudioFormat(buffer: buffer, from: hardwareFormat, to: recordingFormat)
             } else {
                 convertedBuffer = buffer
             }
+            
+            // Apply volume amplification for clearer audio
+            amplifyAudioBuffer(&convertedBuffer, amplificationFactor: volumeBoost)
             
             let opusData = try encoder.encode(convertedBuffer)
             let adjustedTimestamp = timestamp - recordingStartTime
@@ -195,6 +264,75 @@ public class OpusRecorderPlayer {
         }
         
         return outputBuffer
+    }
+    
+    // MARK: - Audio Enhancement Methods
+    
+    private func amplifyAudioBuffer(_ buffer: inout AVAudioPCMBuffer, amplificationFactor: Float) {
+        guard let floatChannelData = buffer.floatChannelData else { return }
+        
+        let frameLength = Int(buffer.frameLength)
+        let channelCount = Int(buffer.format.channelCount)
+        
+        for channel in 0..<channelCount {
+            let channelData = floatChannelData[channel]
+            
+            for frame in 0..<frameLength {
+                // Apply amplification with soft limiting to prevent clipping
+                var sample = channelData[frame] * amplificationFactor
+                
+                // Soft limiting to prevent harsh clipping
+                if sample > 0.95 {
+                    sample = 0.95 + (sample - 0.95) * 0.1
+                } else if sample < -0.95 {
+                    sample = -0.95 + (sample + 0.95) * 0.1
+                }
+                
+                channelData[frame] = sample
+            }
+        }
+        
+        print("🔊 Applied \(amplificationFactor)x volume amplification to audio buffer")
+    }
+    
+    // MARK: - Audio Enhancement Control
+    
+    /// Adjust the volume amplification factor (1.0 = normal, 2.0 = double volume)
+    public func setVolumeAmplification(_ factor: Float) {
+        guard factor >= 0.1 && factor <= 5.0 else {
+            print("⚠️ Volume amplification factor should be between 0.1 and 5.0")
+            return
+        }
+        
+        // Update mixer volume if available
+        audioMixer?.outputVolume = factor
+        print("🎚️ Volume amplification set to \(factor)x")
+    }
+    
+    /// Adjust EQ gain for voice enhancement (-12dB to +12dB)
+    public func setVoiceEnhancement(_ gainDb: Float) {
+        guard gainDb >= -12.0 && gainDb <= 12.0 else {
+            print("⚠️ EQ gain should be between -12dB and +12dB")
+            return
+        }
+        
+        audioUnitEQ?.bands[0].gain = gainDb
+        print("🎵 Voice enhancement EQ set to \(gainDb)dB")
+    }
+    
+    /// Get current audio levels and quality metrics
+    public func getAudioMetrics() -> (inputGain: Float, outputVolume: Float, eqGain: Float) {
+        #if os(iOS)
+        let audioSession = AVAudioSession.sharedInstance()
+        let inputGain = audioSession.inputGain
+        #else
+        let inputGain: Float = 1.0
+        #endif
+        
+        let outputVolume = audioMixer?.outputVolume ?? 1.0
+        let eqGain = audioUnitEQ?.bands[0].gain ?? 0.0
+        
+        return (inputGain: inputGain, outputVolume: outputVolume, eqGain: eqGain)
     }
     
     // MARK: - Playback Control
@@ -238,11 +376,11 @@ public class OpusRecorderPlayer {
         do {
             let pcmBuffer: AVAudioPCMBuffer = try decoder.decode(opusData)
             
-            print("✅ Decoded \(opusData.count) bytes to \(pcmBuffer.frameLength) samples")
+            // print("✅ Decoded \(opusData.count) bytes to \(pcmBuffer.frameLength) samples")
             
             // Schedule the buffer for playback
             playerNode.scheduleBuffer(pcmBuffer) {
-                print("🎵 Finished playing buffer")
+                // print("🎵 Finished playing buffer")
             }
             
         } catch {

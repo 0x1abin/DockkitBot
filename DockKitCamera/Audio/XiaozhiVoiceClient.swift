@@ -85,7 +85,7 @@ public class XiaozhiVoiceClient: NSObject {
     // Audio parameters
     private let sampleRate: Int32 = 24000
     private let channels: Int32 = 1
-    private let frameDuration: Int32 = 100 // ms
+    private let frameDuration: Int32 = 60 // ms
     
     // MARK: - Initialization
     
@@ -207,7 +207,7 @@ public class XiaozhiVoiceClient: NSObject {
     }
     
     private func handleAudioMessage(_ data: Data) {
-        print("🎵 Received audio data: \(data.count) bytes")
+        // print("🎵 Received audio data: \(data.count) bytes")
         
         // Play received audio
         if opusRecorderPlayer?.isPlaying == true {

@@ -347,7 +347,7 @@ private class VoiceClientDelegateWrapper: XiaozhiVoiceClientDelegate {
     
     func voiceClient(_ client: XiaozhiVoiceClient, didReceiveAudioData data: Data) {
         // Audio data is automatically played by the voice client
-        print("🎵 Received \(data.count) bytes of audio data")
+        // print("🎵 Received \(data.count) bytes of audio data")
     }
     
     func voiceClient(_ client: XiaozhiVoiceClient, didChangeTTSState state: String) {
