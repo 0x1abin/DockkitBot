@@ -9,7 +9,6 @@ import Foundation
 import SwiftUI
 
 /// Xiaozhi voice service manager
-@MainActor
 @Observable
 class XiaozhiService {
     
@@ -36,10 +35,10 @@ class XiaozhiService {
     }
     
     deinit {
-        // Use Task to call MainActor isolated method
-        Task { @MainActor in
-            await self.cleanup()
-        }
+        // Cleanup synchronously - removed @MainActor isolation to allow deinit access
+        voiceClient?.disconnect()
+        voiceClient = nil
+        delegateWrapper = nil
         print("🧹 XiaozhiService deinitialized")
     }
     
@@ -199,7 +198,7 @@ private class ServiceDelegateWrapper: XiaozhiVoiceClientDelegate {
     func voiceClientDidConnect(_ client: XiaozhiVoiceClient) {
         print("✅ Background voice client connected successfully!")
         
-        Task { @MainActor in
+        DispatchQueue.main.async {
             self.service?.updateConnectionState(true, status: "connected")
         }
     }
@@ -211,7 +210,7 @@ private class ServiceDelegateWrapper: XiaozhiVoiceClientDelegate {
             print("🔌 Background voice client disconnected")
         }
         
-        Task { @MainActor in
+        DispatchQueue.main.async {
             self.service?.updateConnectionState(false, status: "disconnected")
         }
     }
@@ -224,7 +223,7 @@ private class ServiceDelegateWrapper: XiaozhiVoiceClientDelegate {
     func voiceClient(_ client: XiaozhiVoiceClient, didChangeTTSState state: String) {
         print("🔊 Background TTS state changed to: \(state)")
         
-        Task { @MainActor in
+        DispatchQueue.main.async {
             self.service?.updateTTSState(state)
         }
     }
@@ -239,7 +238,7 @@ private class ServiceDelegateWrapper: XiaozhiVoiceClientDelegate {
            type == "listen",
            let state = message["state"] as? String {
             
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 self.service?.updateListeningState(state == "start")
             }
         }
@@ -250,7 +249,7 @@ private class ServiceDelegateWrapper: XiaozhiVoiceClientDelegate {
         let robotMood = XiaozhiVoiceClient.mapEmotionToRobotMood(emotion)
         print("🎭 Background converting emotion '\(emotion)' to RobotMood: \(robotMood)")
         
-        Task { @MainActor in
+        DispatchQueue.main.async {
             self.service?.onEmotionReceived?(robotMood)
         }
     }
