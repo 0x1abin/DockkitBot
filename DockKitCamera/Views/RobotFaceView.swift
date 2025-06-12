@@ -196,22 +196,14 @@ struct RobotFaceView: View {
             // 当表情改变时，触发相应的动画
             moodAnimator.triggerMoodAnimation(for: newValue)
             
-            // 延迟一点确保状态同步，然后检查是否应该执行电机动作
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                let shouldExecuteMotorAction = (self.robotFaceState.isManualMoodMode || self.isManualMoodMode) && !self.motorExecutor.isPerformingMotorAction
-                
-                if shouldExecuteMotorAction {
-                    print("🚀 执行电机动作，表情: \(newValue)")
-                    self.performMotorActionForMood(newValue)
-                } else {
-                    print("⏸️ 跳过电机动作 - 手动模式: \(self.robotFaceState.isManualMoodMode || self.isManualMoodMode), 电机忙碌: \(self.motorExecutor.isPerformingMotorAction)")
-                    
-                    // 如果电机正在忙碌，等待完成后再执行
-                    if self.motorExecutor.isPerformingMotorAction {
-                        print("⏳ 电机正在执行动作，稍后重试...")
-                        self.scheduleDelayedMotorAction(for: newValue)
-                    }
-                }
+            // 使用防抖机制，避免过于频繁的电机动作触发
+            let shouldExecuteMotorAction = (self.robotFaceState.isManualMoodMode || self.isManualMoodMode)
+            
+            if shouldExecuteMotorAction {
+                print("🚀 触发电机动作，表情: \(newValue)")
+                self.performMotorActionForMood(newValue)
+            } else {
+                print("⏸️ 跳过电机动作 - 手动模式: \(self.robotFaceState.isManualMoodMode || self.isManualMoodMode)")
             }
         }
         .onChange(of: robotFaceState.isManualMoodMode) { oldValue, newValue in
@@ -767,39 +759,16 @@ struct RobotFaceView: View {
         
         Task {
             print("🎬 开始异步执行电机动作...")
-            await motorExecutor.executeMotorAction(motorAction, for: mood, dockController: dockController)
+            // 使用新的并发控制API，设置优先级为normal
+            await motorExecutor.executeMotorAction(motorAction, for: mood, dockController: dockController, priority: .normal)
             print("🎬 电机动作执行完成")
         }
     }
     
     private func scheduleDelayedMotorAction(for mood: RobotMood) {
-        // 智能等待电机动作完成后再执行新的动作
-        print("⏳ 等待当前电机动作完成，然后执行新的表情动作: \(mood)")
-        
-        // 监听电机执行状态，当完成时立即执行新动作
-        let checkInterval: TimeInterval = 0.5
-        var retryCount = 0
-        let maxRetries = 10 // 最多等待5秒
-        
-        func checkAndExecute() {
-            if !motorExecutor.isPerformingMotorAction {
-                print("✅ 电机动作完成，现在执行延迟的表情动作: \(mood)")
-                performMotorActionForMood(mood)
-            } else if retryCount < maxRetries {
-                retryCount += 1
-                print("⏳ 继续等待电机动作完成... (\(retryCount)/\(maxRetries))")
-                DispatchQueue.main.asyncAfter(deadline: .now() + checkInterval) {
-                    checkAndExecute()
-                }
-            } else {
-                print("⚠️ 等待电机动作完成超时，跳过延迟的表情动作: \(mood)")
-            }
-        }
-        
-        // 开始检查
-        DispatchQueue.main.asyncAfter(deadline: .now() + checkInterval) {
-            checkAndExecute()
-        }
+        // 使用新的并发控制系统，不再需要复杂的延迟逻辑
+        print("📝 使用新的队列系统处理延迟电机动作: \(mood)")
+        performMotorActionForMood(mood)
     }
 }
 

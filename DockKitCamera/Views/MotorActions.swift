@@ -97,8 +97,32 @@ class FastMotorActionExecutor {
     private(set) var isPerformingMotorAction: Bool = false
     private var previousTrackingMode: TrackingMode = .system
     
+    // 并发安全的 actor 来管理队列状态
+    private let queueManager = MotorActionQueueManager()
+    private var currentTask: Task<Void, Never>?
+    
     // 动作完成后的回调闭包
     var onActionCompleted: (() -> Void)?
+    
+    // 待执行动作结构
+    struct PendingMotorAction {
+        let action: FastMotorAction
+        let mood: RobotMood
+        let timestamp: Date
+        let priority: ActionPriority
+    }
+    
+    // 动作优先级
+    enum ActionPriority: Int, Comparable {
+        case low = 0      // 普通表情动作
+        case normal = 1   // 常规动作
+        case high = 2     // 重要动作（如用户手动触发）
+        case urgent = 3   // 紧急动作（如系统状态变化）
+        
+        static func < (lhs: ActionPriority, rhs: ActionPriority) -> Bool {
+            lhs.rawValue < rhs.rawValue
+        }
+    }
     
     /// 根据表情返回对应的快速电机动作
     func getMotorActionForMood(_ mood: RobotMood) -> FastMotorAction? {
@@ -153,15 +177,68 @@ class FastMotorActionExecutor {
         }
     }
     
-    /// 执行快速电机动作
-    func executeMotorAction(_ action: FastMotorAction, for mood: RobotMood, dockController: (any DockController)?) async {
+    /// 执行快速电机动作（带并发控制）
+    func executeMotorAction(_ action: FastMotorAction, for mood: RobotMood, dockController: (any DockController)?, priority: ActionPriority = .normal) async {
         guard dockController != nil else {
             print("⚠️ DockController未设置，无法执行电机动作")
             return
         }
         
+        print("🎯 请求执行电机动作: \(action) for \(mood), 优先级: \(priority)")
+        let queueCount = await queueManager.count()
+        print("📍 当前状态: isPerformingMotorAction=\(isPerformingMotorAction), 待处理队列: \(queueCount)")
+        
+        // 如果当前正在执行动作
+        if isPerformingMotorAction {
+            // 根据优先级决定是否打断当前动作
+            if priority.rawValue >= ActionPriority.high.rawValue {
+                print("🚨 高优先级动作，取消当前执行中的动作")
+                currentTask?.cancel()
+                await queueManager.removeAll() // 清空待处理队列
+                await performMotorActionInternal(action, for: mood, dockController: dockController)
+            } else {
+                // 添加到待处理队列
+                let pendingAction = PendingMotorAction(
+                    action: action,
+                    mood: mood,
+                    timestamp: Date(),
+                    priority: priority
+                )
+                await queueManager.addToPendingQueue(pendingAction)
+                let newQueueCount = await queueManager.count()
+                print("📝 动作已加入队列，当前队列长度: \(newQueueCount)")
+            }
+        } else {
+            // 直接执行
+            await performMotorActionInternal(action, for: mood, dockController: dockController)
+        }
+    }
+    
+    /// 内部电机动作执行（无锁保护）
+    private func performMotorActionInternal(_ action: FastMotorAction, for mood: RobotMood, dockController: (any DockController)?) async {
         isPerformingMotorAction = true
         
+        // 创建取消任务
+        currentTask = Task {
+            await executeMotorActionCore(action, for: mood, dockController: dockController)
+        }
+        
+        // 等待任务完成
+        await currentTask?.value
+        currentTask = nil
+        
+        isPerformingMotorAction = false
+        print("🏁 快速电机动作完成")
+        
+        // 调用回调闭包
+        onActionCompleted?()
+        
+        // 处理队列中的下一个动作
+        await processNextPendingAction(dockController: dockController)
+    }
+    
+    /// 核心电机动作执行逻辑
+    private func executeMotorActionCore(_ action: FastMotorAction, for mood: RobotMood, dockController: (any DockController)?) async {
         // 暂停跟随效果
         previousTrackingMode = await dockController?.dockAccessoryFeatures.trackingMode ?? .system
         print("🔄 暂停跟随效果，当前模式: \(previousTrackingMode)")
@@ -169,12 +246,18 @@ class FastMotorActionExecutor {
         
         if !success {
             print("❌ 切换到手动模式失败")
-            isPerformingMotorAction = false
             return
         }
         
         // 等待模式切换完成
-        try? await Task.sleep(nanoseconds: NSEC_PER_SEC / 20) // 0.05秒，更短的等待
+        try? await Task.sleep(nanoseconds: NSEC_PER_SEC / 20) // 0.05秒
+        
+        // 检查任务是否被取消
+        if Task.isCancelled {
+            print("🛑 电机动作被取消")
+            await restoreTrackingMode(dockController: dockController)
+            return
+        }
         
         // 执行具体的快速动作
         let actionSuccess = await performFastMotorAction(action, dockController: dockController)
@@ -186,17 +269,16 @@ class FastMotorActionExecutor {
         }
         
         // 恢复跟随效果
+        await restoreTrackingMode(dockController: dockController)
+    }
+    
+    /// 恢复跟踪模式
+    private func restoreTrackingMode(dockController: (any DockController)?) async {
         print("🔄 恢复跟随效果到模式: \(previousTrackingMode)")
         let restoreSuccess = await dockController?.updateTrackingMode(to: previousTrackingMode) ?? false
         if !restoreSuccess {
             print("❌ 恢复跟随模式失败")
         }
-        
-        isPerformingMotorAction = false
-        print("🏁 快速电机动作完成")
-        
-        // 调用回调闭包
-        onActionCompleted?()
     }
     
     /// 执行具体的快速电机动作
@@ -362,6 +444,31 @@ class FastMotorActionExecutor {
         return true
     }
     
+    /// 处理队列中的下一个待处理动作
+    private func processNextPendingAction(dockController: (any DockController)?) async {
+        guard let nextAction = await queueManager.removeFirst() else {
+            return
+        }
+        
+        print("📤 从队列中处理下一个动作: \(nextAction.action) for \(nextAction.mood)")
+        await performMotorActionInternal(nextAction.action, for: nextAction.mood, dockController: dockController)
+    }
+    
+    /// 取消所有待处理的动作
+    func cancelAllPendingActions() async {
+        let count = await queueManager.count()
+        print("🛑 取消所有待处理的电机动作 (\(count)个)")
+        await queueManager.removeAll()
+        currentTask?.cancel()
+    }
+    
+    /// 获取待处理动作数量
+    var pendingActionsCount: Int {
+        get async {
+            return await queueManager.count()
+        }
+    }
+    
     // MARK: - Legacy Support
     
     /// 兼容旧接口
@@ -376,5 +483,53 @@ class FastMotorActionExecutor {
         } else if let fastAction = getMotorActionForMood(mood) {
             await executeMotorAction(fastAction, for: mood, dockController: dockController)
         }
+    }
+}
+
+// MARK: - Motor Action Queue Manager Actor
+
+/// 并发安全的动作队列管理器
+actor MotorActionQueueManager {
+    var pendingActions: [FastMotorActionExecutor.PendingMotorAction] = []
+    
+    func addToPendingQueue(_ action: FastMotorActionExecutor.PendingMotorAction) {
+        // 移除过期的动作（超过5秒的动作认为过期）
+        let now = Date()
+        pendingActions.removeAll { now.timeIntervalSince($0.timestamp) > 5.0 }
+        
+        // 如果队列已满（超过3个），移除最旧的低优先级动作
+        while pendingActions.count >= 3 {
+            if let indexToRemove = pendingActions.firstIndex(where: { $0.priority == .low }) {
+                pendingActions.remove(at: indexToRemove)
+                print("🗑️ 移除低优先级过期动作")
+            } else {
+                pendingActions.removeFirst()
+                print("🗑️ 队列已满，移除最旧动作")
+            }
+        }
+        
+        // 插入新动作，按优先级排序
+        if let insertIndex = pendingActions.firstIndex(where: { $0.priority < action.priority }) {
+            pendingActions.insert(action, at: insertIndex)
+        } else {
+            pendingActions.append(action)
+        }
+    }
+    
+    func removeFirst() -> FastMotorActionExecutor.PendingMotorAction? {
+        guard !pendingActions.isEmpty else { return nil }
+        return pendingActions.removeFirst()
+    }
+    
+    func removeAll() {
+        pendingActions.removeAll()
+    }
+    
+    func count() -> Int {
+        return pendingActions.count
+    }
+    
+    func isEmpty() -> Bool {
+        return pendingActions.isEmpty
     }
 } 
