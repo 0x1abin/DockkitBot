@@ -12,6 +12,9 @@ struct ContentView<CameraModel: Camera, DockControllerModel: DockController>: Vi
     @State var camera: CameraModel
     @State var dockController: DockControllerModel
     
+    // Xiaozhi voice service
+    @State private var xiaozhiService = XiaozhiService()
+    
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -24,29 +27,26 @@ struct ContentView<CameraModel: Camera, DockControllerModel: DockController>: Vi
                     .opacity(0)
                     .allowsHitTesting(false)
                     .hidden()
-                
-                // Control buttons - 左下角语音对话按钮，右下角录音测试按钮
-                VStack {
-                    Spacer()
-                    HStack {
-                        // Voice chat button (左下角) - 添加emotion回调
-                        VoiceChatButton(onEmotionReceived: { mood in
-                            handleEmotionReceived(mood)
-                        })
-                        
-                        Spacer()
-                        
-                        // Record test button (右下角)
-                        RecordTestButton()
-                    }
-                    .padding(.bottom, isLandscape(geometry) ? 60 : 40)
-                    .padding(.horizontal, isLandscape(geometry) ? 45 : 30)
-                }
             }
         }
         .ignoresSafeArea(.all)
         .statusBarHidden(true)
         .persistentSystemOverlays(.hidden)
+        .task {
+            // Setup emotion handling callback with explicit type
+            xiaozhiService.onEmotionReceived = { (mood: RobotMood) -> Void in
+                self.handleEmotionReceived(mood)
+            }
+            
+            // Initialize voice service in background after a brief delay
+            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second delay
+            await xiaozhiService.startService()
+        }
+        .onDisappear {
+            Task {
+                await xiaozhiService.stopService()
+            }
+        }
     }
     
     // MARK: - Emotion Handling
@@ -70,7 +70,7 @@ struct ContentView<CameraModel: Camera, DockControllerModel: DockController>: Vi
         
         // 额外的状态验证
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            print("✅ Emotion change confirmed - Final mood: \(self.dockController.robotFaceState.mood)")
+            print("✅ Emotion change confirmed - Final mood: \(dockController.robotFaceState.mood)")
         }
     }
     

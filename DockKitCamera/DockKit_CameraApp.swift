@@ -27,13 +27,13 @@ struct DockKitCameraApp: App {
                     // Step 2: Start the capture pipeline and essential services
                     await camera.start()
                     
-                    // Step 3: Wait a brief moment for services to fully initialize
-                    try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                    // Step 3: Wait longer for services to fully initialize (including background voice client)
+                    try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
                     
                     // Step 4: Automatically enable robot face tracking mode after core services are ready
                     await dockController.enableRobotFaceMode()
                     
-                    logger.info("All essential services started and robot face tracking mode enabled automatically")
+                    logger.info("All essential services started (including background voice client) and robot face tracking mode enabled automatically")
                 }
         }
     }

@@ -11,6 +11,7 @@
 		3E27DFA82DE22F4200F27742 /* MotorActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E27DFA62DE22F4200F27742 /* MotorActions.swift */; };
 		3E27DFA92DE22F4200F27742 /* MoodAnimations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E27DFA52DE22F4200F27742 /* MoodAnimations.swift */; };
 		3E27DFAA2DE22F4200F27742 /* VerticalLEDEyeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E27DFA72DE22F4200F27742 /* VerticalLEDEyeView.swift */; };
+		3E8066B02DFB2AAE00AEC3C6 /* XiaozhiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E8066AF2DFB2AAE00AEC3C6 /* XiaozhiService.swift */; };
 		3EA19B5F2DE8BB130007E765 /* opus in Frameworks */ = {isa = PBXBuildFile; productRef = 3EA19B5E2DE8BB130007E765 /* opus */; };
 		3EA19B622DE8BBCC0007E765 /* ogg in Frameworks */ = {isa = PBXBuildFile; productRef = 3EA19B612DE8BBCC0007E765 /* ogg */; };
 		3EB605E62DEB3BB200300628 /* OpusRecorderPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EB605E42DEB3BB200300628 /* OpusRecorderPlayer.swift */; };
@@ -43,6 +44,7 @@
 		3E27DFA52DE22F4200F27742 /* MoodAnimations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodAnimations.swift; sourceTree = "<group>"; };
 		3E27DFA62DE22F4200F27742 /* MotorActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotorActions.swift; sourceTree = "<group>"; };
 		3E27DFA72DE22F4200F27742 /* VerticalLEDEyeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerticalLEDEyeView.swift; sourceTree = "<group>"; };
+		3E8066AF2DFB2AAE00AEC3C6 /* XiaozhiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XiaozhiService.swift; sourceTree = "<group>"; };
 		3EB605E32DEB3BB200300628 /* OpusAudioCoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpusAudioCoder.swift; sourceTree = "<group>"; };
 		3EB605E42DEB3BB200300628 /* OpusRecorderPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpusRecorderPlayer.swift; sourceTree = "<group>"; };
 		3EB605EC2DEB421F00300628 /* RecordTestButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordTestButton.swift; sourceTree = "<group>"; };
@@ -187,12 +189,13 @@
 		55A595A12C07D1DD001D3AA4 /* DockKitCamera */ = {
 			isa = PBXGroup;
 			children = (
-				3EB605E52DEB3BB200300628 /* Audio */,
+				3E8066AF2DFB2AAE00AEC3C6 /* XiaozhiService.swift */,
 				55122A412C1BCF0A0055FBF1 /* DockKit-Camera-Info.plist */,
 				55A595A22C07D1DD001D3AA4 /* DockKit_CameraApp.swift */,
 				55A595A42C07D1DD001D3AA4 /* ContentView.swift */,
 				5550AC902C1CDA47002651AC /* CaptureService.swift */,
 				5550ACB82C1D17CA002651AC /* DockControlService.swift */,
+				3EB605E52DEB3BB200300628 /* Audio */,
 				55308ACF2C3C8EDB00814AB2 /* Camera */,
 				55308A902C3C8DB200814AB2 /* Views */,
 				5588DAD52C1CD34F0019FB08 /* Model */,
@@ -308,6 +311,7 @@
 				55A595A52C07D1DD001D3AA4 /* ContentView.swift in Sources */,
 				3EB605ED2DEB421F00300628 /* RecordTestButton.swift in Sources */,
 				5550ACBB2C1E6C8D002651AC /* DockControllerModel.swift in Sources */,
+				3E8066B02DFB2AAE00AEC3C6 /* XiaozhiService.swift in Sources */,
 				5550ACB92C1D17CA002651AC /* DockControlService.swift in Sources */,
 				55308AD12C3C8EDB00814AB2 /* DeviceLookup.swift in Sources */,
 				5550AC9B2C1CDD85002651AC /* Camera.swift in Sources */,
