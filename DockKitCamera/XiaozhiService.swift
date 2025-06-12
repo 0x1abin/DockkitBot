@@ -36,10 +36,8 @@ class XiaozhiService {
     }
     
     deinit {
-        // Use Task to call MainActor isolated method
-        Task { @MainActor in
-            await self.cleanup()
-        }
+        // Synchronous cleanup in deinit - avoid async operations and closures
+        // The disconnect operation will be handled by the voiceClient's own deinit
         print("🧹 XiaozhiService deinitialized")
     }
     
